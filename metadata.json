@@ -1,0 +1,6 @@
+{
+  "name": "ATHANASIA: Ang Hiwaga ng Diwa",
+  "description": "Multiplayer tactical board and social deduction card game based on Philippine mythology with real-time rooms, modular card crafting, and an admin balancer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
