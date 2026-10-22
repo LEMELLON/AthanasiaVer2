@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { GameCard, GameRoom, PlayerState } from '../../types/game';
-import { Shield, Sparkles, Skull, Eye, EyeOff, UserCheck, Play, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Shield, Sparkles, Skull, Eye, EyeOff, Play, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface HandDrawerProps {
   room: GameRoom;
@@ -18,6 +19,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
   onEndTurn,
   onOpenAccusation,
 }) => {
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(true);
   const [selectedCard, setSelectedCard] = useState<GameCard | null>(null);
   const [showRole, setShowRole] = useState(false);
@@ -35,7 +37,6 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
       setSelectedCard(null);
     } else {
       setSelectedCard(card);
-      // Auto select first target if applicable
       if (otherPlayers.length > 0 && !targetPlayerId) {
         setTargetPlayerId(otherPlayers[0].id);
       }
@@ -56,7 +57,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className="pointer-events-auto px-4 py-1 rounded-t-xl bg-slate-900/90 border-t border-x border-amber-500/40 text-xs font-cinzel text-amber-300 hover:text-white flex items-center gap-1.5 shadow-lg backdrop-blur-md cursor-pointer"
       >
-        <span>Mga Baraha at Agimat ({currentPlayer.hand?.length || 0})</span>
+        <span>{t.drawerHandle} ({currentPlayer.hand?.length || 0})</span>
         {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
       </button>
 
@@ -77,7 +78,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                 }`}
               >
                 {showRole ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                <span>Gampanin: {showRole ? currentPlayer.role.toUpperCase() : 'Silipin'}</span>
+                <span>{t.roleBtn}: {showRole ? currentPlayer.role.toUpperCase() : t.peekRole}</span>
               </button>
 
               {/* Sumpa Card Peek */}
@@ -87,7 +88,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                   className="px-3 py-1.5 rounded-lg border border-purple-600/60 bg-purple-950/40 text-purple-300 flex items-center gap-1.5 font-medium hover:bg-purple-900/50 transition-colors cursor-pointer"
                 >
                   <Skull className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Sumpa: {showSumpa ? currentPlayer.sumpaCard.title : 'Silipin'}</span>
+                  <span>{t.sumpaBtn}: {showSumpa ? currentPlayer.sumpaCard.title : t.peekSumpa}</span>
                 </button>
               )}
 
@@ -95,7 +96,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
               {currentPlayer.hasShield && (
                 <div className="px-2.5 py-1 rounded-lg border border-cyan-500/50 bg-cyan-950/40 text-cyan-300 flex items-center gap-1 text-[11px] font-semibold">
                   <Shield className="w-3.5 h-3.5" />
-                  <span>May Kalasag (Anting-Anting)</span>
+                  <span>{t.shieldBadge}</span>
                 </div>
               )}
             </div>
@@ -107,10 +108,10 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                 <button
                   onClick={() => { sounds.playAccusationDrama(); onOpenAccusation(); }}
                   className="px-3 py-1.5 rounded-lg border border-rose-500/70 bg-gradient-to-r from-rose-950 to-rose-900 text-rose-200 text-xs font-cinzel font-bold hover:brightness-110 flex items-center gap-1.5 shadow-md shadow-rose-950/60 cursor-pointer"
-                  title="Isang beses lamang magagamit sa buong laro!"
+                  title={t.accuseTooltip}
                 >
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Hulaan ang Impostor</span>
+                  <span>{t.accuseBtn}</span>
                 </button>
               )}
 
@@ -120,7 +121,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                   onClick={() => { sounds.playClick(); onEndTurn(); }}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-amber-300 hover:bg-slate-700 hover:text-white font-cinzel text-xs font-semibold cursor-pointer"
                 >
-                  Tapusin ang Tira ➔
+                  {t.endTurnBtn}
                 </button>
               )}
             </div>
@@ -134,17 +135,17 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                 <span className="italic font-serif">"{currentPlayer.sumpaCard.hint}"</span>
                 <p className="text-[11px] text-purple-300/80 mt-0.5">{currentPlayer.sumpaCard.flavorText}</p>
               </div>
-              <button onClick={() => setShowSumpa(false)} className="text-purple-400 hover:text-white text-[11px] px-2 py-0.5 rounded bg-purple-900/60">
-                Itago
+              <button onClick={() => setShowSumpa(false)} className="text-purple-400 hover:text-white text-[11px] px-2 py-0.5 rounded bg-purple-900/60 cursor-pointer">
+                {t.hideSecret}
               </button>
             </div>
           )}
 
-          {/* Hand Cards List (Uno Style Horizontal Scroll) */}
+          {/* Hand Cards List */}
           <div className="flex items-center gap-2.5 overflow-x-auto py-1">
             {(!currentPlayer.hand || currentPlayer.hand.length === 0) ? (
               <div className="py-4 text-center w-full text-slate-500 text-xs font-medium">
-                Wala ka pang hawak na Biyaya cards. Makakamit ito sa pagsagot sa Pagsubok o sa Kapalaran!
+                {t.emptyHand}
               </div>
             ) : (
               currentPlayer.hand.map((card) => {
@@ -159,7 +160,6 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                         : 'bg-slate-900/90 border border-amber-900/40 hover:border-amber-600/60 hover:-translate-y-1'
                     }`}
                   >
-                    {/* Card Title */}
                     <div>
                       <div className="text-[10px] font-bold text-amber-400 uppercase font-cinzel leading-tight line-clamp-2">
                         {card.title}
@@ -169,14 +169,12 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                       </div>
                     </div>
 
-                    {/* Card Icon Accent */}
                     <div className="my-auto flex items-center justify-center text-amber-500/80">
                       <Sparkles className="w-5 h-5" />
                     </div>
 
-                    {/* Card Effect Summary */}
                     <div className="text-[9px] text-slate-300 line-clamp-2 leading-tight">
-                      {card.effects?.[0]?.description || card.flavorText || 'Espesyal na epekto.'}
+                      {card.effects?.[0]?.description || card.flavorText || (language === 'tl' ? 'Espesyal na epekto.' : 'Special effect.')}
                     </div>
 
                     {isSelected && (
@@ -202,11 +200,10 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Target selector if card targets another player */}
               <div className="flex items-center gap-2">
                 {selectedCard.effects?.some(e => e.target === 'target_player') && otherPlayers.length > 0 && (
                   <div className="flex items-center gap-1 text-xs">
-                    <span className="text-slate-400">Target:</span>
+                    <span className="text-slate-400">{t.targetLabel}</span>
                     <select
                       value={targetPlayerId}
                       onChange={(e) => setTargetPlayerId(e.target.value)}
@@ -219,7 +216,6 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                   </div>
                 )}
 
-                {/* Play Button */}
                 <button
                   onClick={handleExecutePlay}
                   disabled={!canPlayCards}
@@ -230,7 +226,7 @@ export const HandDrawer: React.FC<HandDrawerProps> = ({
                   }`}
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>{canPlayCards ? 'GAMITIN ANG BARAHA' : 'HINDI PWEDE NGAYON'}</span>
+                  <span>{canPlayCards ? t.useCardBtn : t.cannotPlayBtn}</span>
                 </button>
               </div>
             </div>

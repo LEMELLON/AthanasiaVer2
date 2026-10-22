@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Dices, Sparkles, AlertCircle } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface DiceRollerProps {
   isCurrentPlayerTurn: boolean;
@@ -17,6 +18,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
   onRoll,
   halveNextRoll,
 }) => {
+  const { t } = useLanguage();
   const [rolling, setRolling] = useState(false);
   const [displayValue, setDisplayValue] = useState<number>(lastRoll || 1);
 
@@ -26,7 +28,6 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
     setRolling(true);
     sounds.playDiceRoll();
 
-    // Jiggle/cycle random numbers for 600ms
     const interval = setInterval(() => {
       setDisplayValue(Math.floor(Math.random() * 6) + 1);
     }, 60);
@@ -38,7 +39,6 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
     }, 650);
   };
 
-  // Dice dot positions mapping
   const renderDiceDots = (val: number) => {
     const dotConfigs: Record<number, number[]> = {
       1: [4],
@@ -66,18 +66,16 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
   return (
     <div className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-slate-900/90 border border-amber-900/40 backdrop-blur-md shadow-xl">
       <div className="flex items-center gap-3">
-        {/* Dice Visual */}
         <div className={`transition-transform duration-300 ${rolling ? 'animate-bounce rotate-12 scale-110' : ''}`}>
           {renderDiceDots(displayValue)}
         </div>
 
-        {/* Dice Info */}
         <div className="text-left">
           <div className="text-[11px] uppercase tracking-wider text-amber-400/80 font-cinzel font-semibold">
-            Banol na Dice
+            {t.sacredDice}
           </div>
           <div className="font-mono text-xs text-slate-300">
-            {rolling ? 'Gumugulong...' : lastRoll ? `Resulta: ${lastRoll}` : 'Handa nang gumulong'}
+            {rolling ? t.rollingDice : lastRoll ? `${t.resultDice} ${lastRoll}` : t.readyDice}
           </div>
         </div>
       </div>
@@ -85,11 +83,10 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
       {halveNextRoll && (
         <div className="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/30">
           <AlertCircle className="w-3 h-3" />
-          <span>Kalahati ang epekto ng susunod na roll!</span>
+          <span>{t.halvedRollNotice}</span>
         </div>
       )}
 
-      {/* Roll Action Button */}
       <button
         onClick={handleRollClick}
         disabled={!isCurrentPlayerTurn || !canRoll || rolling}
@@ -100,7 +97,7 @@ export const DiceRoller: React.FC<DiceRollerProps> = ({
         }`}
       >
         <Dices className="w-4 h-4" />
-        <span>{rolling ? 'GUMUGULONG...' : isCurrentPlayerTurn && canRoll ? 'GUMULONG NG DICE' : 'HINDI MO TIRA'}</span>
+        <span>{rolling ? t.rollingDiceBtn : isCurrentPlayerTurn && canRoll ? t.rollDiceBtn : t.notYourTurn}</span>
         {isCurrentPlayerTurn && canRoll && !rolling && <Sparkles className="w-3.5 h-3.5 text-slate-950" />}
       </button>
     </div>

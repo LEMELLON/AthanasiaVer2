@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { GameCard, GameRoom, PlayerState, RealmType } from '../../types/game';
-import { Lock, Unlock, Users, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
+import { GameRoom, PlayerState, RealmType } from '../../types/game';
+import { Lock, Sparkles, CheckCircle2 } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface GateChallengeModalProps {
   room: GameRoom;
@@ -14,6 +15,7 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
   currentPlayer,
   onVoteGate,
 }) => {
+  const { t, language } = useLanguage();
   const [selectedSuspectId, setSelectedSuspectId] = useState<string>('');
   const [hasVoted, setHasVoted] = useState<boolean>(false);
 
@@ -30,11 +32,11 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
   };
 
   const realmNames: Record<RealmType, string> = {
-    talvaris: 'Talvaris (Lupa) — Ikapatar',
-    alabarya: 'Alabarya (Apoy) — Sinukalab',
-    alonawon: 'Alonawon (Tubig) — Sinayalon',
-    himaraya: 'Himaraya (Hangin) — Lihamihan',
-    aetherya: 'Aetherya (Sanctuary) — Varyndor',
+    talvaris: language === 'tl' ? 'Talvaris (Lupa) — Ikapatar' : 'Talvaris (Earth) — Ikapatar',
+    alabarya: language === 'tl' ? 'Alabarya (Apoy) — Sinukalab' : 'Alabarya (Fire) — Sinukalab',
+    alonawon: language === 'tl' ? 'Alonawon (Tubig) — Sinayalon' : 'Alonawon (Water) — Sinayalon',
+    himaraya: language === 'tl' ? 'Himaraya (Hangin) — Lihamihan' : 'Himaraya (Air) — Lihamihan',
+    aetherya: language === 'tl' ? 'Aetherya (Sanctuary) — Varyndor' : 'Aetherya (Sanctuary) — Varyndor',
   };
 
   return (
@@ -46,13 +48,13 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
             <Lock className="w-6 h-6" />
           </div>
           <span className="font-cinzel text-xs font-bold tracking-widest text-amber-400 uppercase">
-            Pintuan ng Diwaling
+            {t.gateModalTitle}
           </span>
           <h2 className="font-cinzel text-lg font-bold text-amber-100">
             {realmNames[realm]}
           </h2>
           <p className="text-xs text-slate-300 max-w-sm">
-            Bago makatawid ang buong pangkat, dapat masagot ang tanong ng Pahiwatig upang matukoy kung sino ang may tangan ng katugmang Sumpa!
+            {t.gateModalDesc}
           </p>
         </div>
 
@@ -66,7 +68,9 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
             "{card.question}"
           </p>
           <div className="text-[11px] text-slate-400 mt-2">
-            Tip: Alalahanin ang mga pahiwatig ng Sumpa na binasa ng bawat isa sa simula ng laro.
+            {language === 'tl'
+              ? 'Tip: Alalahanin ang mga pahiwatig ng Sumpa na binasa ng bawat isa sa simula ng laro.'
+              : 'Tip: Recall the secret Sumpa hints shared in chat at the beginning of the match.'}
           </div>
         </div>
 
@@ -74,7 +78,7 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
         {!hasVoted ? (
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-slate-300 text-left">
-              Pumili ng kasama na sa tingin mo ay may hawak ng sumpang ito:
+              {t.gateVotePrompt}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {room.players.map((p) => {
@@ -106,12 +110,12 @@ export const GateChallengeModal: React.FC<GateChallengeModalProps> = ({
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>IPASA ANG IYONG HINALA</span>
+              <span>{t.gateVoteBtn}</span>
             </button>
           </div>
         ) : (
           <div className="py-4 text-center text-xs text-amber-300 font-medium bg-amber-950/40 rounded-xl border border-amber-500/30">
-            Nai-submit na ang iyong boto. Hinihintay ang mga boto ng ibang manlalakbay...
+            {t.gateVotedStatus}
           </div>
         )}
       </div>

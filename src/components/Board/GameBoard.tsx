@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { BoardTile, GameRoom, PlayerState, RealmType } from '../../types/game';
 import { CANONICAL_BOARD_TILES } from '../../data/canonicalCards';
-import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Sparkles, Flame, Droplets, Wind, Mountain, Eye } from 'lucide-react';
+import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Flame, Droplets, Wind, Mountain } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface GameBoardProps {
   room: GameRoom;
@@ -15,6 +16,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   currentPlayer,
   onTileClick,
 }) => {
+  const { t, language } = useLanguage();
   const [selectedTile, setSelectedTile] = useState<BoardTile | null>(null);
 
   const realmColors: Record<RealmType, { border: string; bg: string; text: string; glow: string; name: string }> = {
@@ -23,35 +25,35 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       bg: 'bg-emerald-950/70',
       text: 'text-emerald-300',
       glow: 'shadow-emerald-900/40',
-      name: 'Talvaris — Lupa (Earth)',
+      name: language === 'tl' ? 'Talvaris — Lupa' : 'Talvaris — Earth',
     },
     alabarya: {
       border: 'border-amber-500/60',
       bg: 'bg-amber-950/70',
       text: 'text-amber-300',
       glow: 'shadow-amber-900/40',
-      name: 'Alabarya — Apoy (Fire)',
+      name: language === 'tl' ? 'Alabarya — Apoy' : 'Alabarya — Fire',
     },
     alonawon: {
       border: 'border-cyan-500/60',
       bg: 'bg-cyan-950/70',
       text: 'text-cyan-300',
       glow: 'shadow-cyan-900/40',
-      name: 'Alonawon — Tubig (Water)',
+      name: language === 'tl' ? 'Alonawon — Tubig' : 'Alonawon — Water',
     },
     himaraya: {
       border: 'border-purple-500/60',
       bg: 'bg-purple-950/70',
       text: 'text-purple-300',
       glow: 'shadow-purple-900/40',
-      name: 'Himaraya — Hangin (Air)',
+      name: language === 'tl' ? 'Himaraya — Hangin' : 'Himaraya — Air',
     },
     aetherya: {
       border: 'border-yellow-400',
       bg: 'bg-gradient-to-br from-yellow-950/90 via-amber-900/80 to-slate-900',
       text: 'text-yellow-200',
       glow: 'shadow-yellow-500/50',
-      name: 'Aetherya — Huling Lupain (Sanctuary)',
+      name: language === 'tl' ? 'Aetherya — Huling Lupain (Sanctuary)' : 'Aetherya — Final Realm (Sanctuary)',
     },
   };
 
@@ -111,13 +113,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* 50-Tile Serpentine Grid Layout */}
       <div className="min-w-[1050px] p-4 rounded-3xl bg-slate-950/80 border border-slate-800/80 shadow-2xl relative">
-        {/* Background Atmosphere Elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/10 via-amber-950/10 to-purple-950/10 rounded-3xl pointer-events-none" />
 
         {/* Serpentine Rows (0 to 4) */}
         {[0, 1, 2, 3, 4].map((rowIdx) => {
           const rowTiles = CANONICAL_BOARD_TILES.filter(t => t.gridY === rowIdx).sort((a, b) => {
-            // Rows 0 and 2 go Left to Right, Rows 1 and 3 go Right to Left
             return rowIdx % 2 === 0 ? a.gridX - b.gridX : b.gridX - a.gridX;
           });
 
@@ -126,11 +126,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               {/* Row Realm Label */}
               <div className="w-20 shrink-0 text-left pl-1">
                 <span className="font-cinzel text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {rowIdx === 0 && 'Lupa'}
-                  {rowIdx === 1 && 'Apoy'}
-                  {rowIdx === 2 && 'Tubig'}
-                  {rowIdx === 3 && 'Hangin'}
-                  {rowIdx === 4 && 'Aetherya'}
+                  {rowIdx === 0 && t.rowEarth}
+                  {rowIdx === 1 && t.rowFire}
+                  {rowIdx === 2 && t.rowWater}
+                  {rowIdx === 3 && t.rowAir}
+                  {rowIdx === 4 && t.rowSanctuary}
                 </span>
               </div>
 
@@ -158,7 +158,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       {/* Tile Header: Number */}
                       <div className="w-full flex items-center justify-between px-0.5">
                         <span className="font-mono text-[10px] text-slate-400 font-bold">
-                          {tile.index === 0 ? 'START' : `#${tile.index}`}
+                          {tile.index === 0 ? t.startTileLabel : `#${tile.index}`}
                         </span>
                         {tile.type === 'pintuan' && (
                           <span className="text-[9px] font-bold uppercase text-amber-300 font-cinzel">GATE</span>
@@ -172,7 +172,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                       {/* Tile Label */}
                       <div className="text-[9px] truncate w-full text-center text-slate-300 font-medium">
-                        {tile.type === 'aetherya' ? 'WAKAS' : tile.type === 'pintuan' ? tile.guardianName?.split(' ')[0] : tile.type.toUpperCase()}
+                        {tile.type === 'aetherya' ? t.endTileLabel : tile.type === 'pintuan' ? tile.guardianName?.split(' ')[0] : tile.type.toUpperCase()}
                       </div>
 
                       {/* Players on this Tile */}
@@ -230,11 +230,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <span className="text-[11px] font-mono text-slate-400 font-bold">Tile #{selectedTile.index}</span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                {selectedTile.description || `Lupain ng ${realmColors[selectedTile.realm].name}. Uri: ${selectedTile.type.toUpperCase()}`}
+                {selectedTile.description || `${t.realmPrefix} ${realmColors[selectedTile.realm].name}. ${t.typePrefix}: ${selectedTile.type.toUpperCase()}`}
               </p>
               {selectedTile.guardianName && (
                 <div className="text-[11px] text-amber-400 font-semibold mt-0.5">
-                  🛡️ Bantay na Diwaling: {selectedTile.guardianName}
+                  🛡️ {t.guardianPrefix}: {selectedTile.guardianName}
                 </div>
               )}
             </div>
@@ -243,7 +243,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             onClick={() => setSelectedTile(null)}
             className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer"
           >
-            Isara
+            {t.closeBtn}
           </button>
         </div>
       )}

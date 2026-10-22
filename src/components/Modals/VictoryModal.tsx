@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { GameRoom, PlayerState } from '../../types/game';
 import confetti from 'canvas-confetti';
-import { Crown, Sparkles, Skull, RotateCcw, Home } from 'lucide-react';
+import { Crown, Home } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface VictoryModalProps {
   room: GameRoom;
@@ -15,11 +16,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   currentPlayer,
   onRestartLobby,
 }) => {
+  const { t, language } = useLanguage();
   const isAninagWin = room.winner === 'aninag';
 
   useEffect(() => {
     sounds.playVictory();
-    // Fire celebratory confetti bursts
     try {
       confetti({
         particleCount: 80,
@@ -31,12 +32,12 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   }, [isAninagWin]);
 
   const winnerTitle = isAninagWin
-    ? 'TAGUMPAY NG MGA ANINAG!'
-    : 'TAGUMPAY NG IMPOSTOR!';
+    ? t.victoryAninagTitle
+    : t.victoryImpostorTitle;
 
   const winnerSubtitle = isAninagWin
-    ? 'Matagumpay na naibalik ang liwanag ng Diwa sa dambana ni Varyndor sa Aetherya!'
-    : 'Naligaw at napigil ng Karimlan ang pagbabalik ng liwanag sa Aetherya!';
+    ? t.victoryAninagDesc
+    : t.victoryImpostorDesc;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-fadeIn">
@@ -55,7 +56,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <Crown className="w-8 h-8" />
           </div>
           <span className="font-cinzel text-xs font-bold tracking-widest uppercase text-amber-400">
-            WAKAS NG LAKBAYIN
+            {language === 'tl' ? 'WAKAS NG LAKBAYIN' : 'END OF PILGRIMAGE'}
           </span>
           <h2 className="font-cinzel text-xl md:text-2xl font-black text-amber-100">
             {winnerTitle}
@@ -68,7 +69,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {/* Player Roles & Curses Revealed */}
         <div className="flex flex-col gap-2 text-left">
           <span className="font-cinzel text-xs font-bold text-amber-400 uppercase tracking-wider">
-            Pagbubunyag ng mga Lihim:
+            {language === 'tl' ? 'Pagbubunyag ng mga Lihim:' : 'Revelation of Secrets:'}
           </span>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
             {room.players.map((p) => {
@@ -88,11 +89,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                       <div className="font-semibold flex items-center gap-1.5">
                         <span>{p.name}</span>
                         {p.id === currentPlayer.id && (
-                          <span className="text-[10px] text-amber-400 font-mono">(Ikaw)</span>
+                          <span className="text-[10px] text-amber-400 font-mono">
+                            {language === 'tl' ? '(Ikaw)' : '(You)'}
+                          </span>
                         )}
                       </div>
                       <div className="text-[10px] text-slate-400 font-serif italic">
-                        Sumpa: {p.sumpaCard?.title || 'Walang sumpa'}
+                        {p.sumpaCard?.title ? `Sumpa: ${p.sumpaCard.title}` : (language === 'tl' ? 'Walang sumpa' : 'No curse')}
                       </div>
                     </div>
                   </div>
@@ -116,7 +119,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           className="w-full py-3 px-6 rounded-xl font-cinzel text-xs font-bold tracking-wider bg-gradient-to-r from-amber-500 to-amber-700 text-slate-950 hover:brightness-110 shadow-lg shadow-amber-900/40 flex items-center justify-center gap-2 cursor-pointer transition-all"
         >
           <Home className="w-4 h-4" />
-          <span>BUMALIK SA LOBBY / SILID</span>
+          <span>{t.playAgainBtn}</span>
         </button>
       </div>
     </div>

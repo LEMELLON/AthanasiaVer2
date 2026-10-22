@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GameRoom, PlayerState, ChatMessage } from '../../types/game';
-import { Send, MessageSquare, Users, Sparkles, Smile, Shield } from 'lucide-react';
+import { GameRoom, PlayerState } from '../../types/game';
+import { Send, MessageSquare, Users, Shield } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface GameChatProps {
   room: GameRoom;
@@ -14,20 +15,30 @@ export const GameChat: React.FC<GameChatProps> = ({
   currentPlayer,
   onSendChat,
 }) => {
+  const { t, language } = useLanguage();
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'chat' | 'players'>('chat');
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const quickReactions = [
+  const quickReactions = language === 'tl' ? [
     'Tabi-tabi po! 🌿',
     'Sino ang Impostor? 👀',
     'Ingat sa Sumpa! ⚠️',
     'Sulong sa Aetherya! 🏆',
     'Laban lang, Aninag! ✨',
+  ] : [
+    'Tabi-tabi po! 🌿',
+    'Who is the Impostor? 👀',
+    'Beware the Sumpa! ⚠️',
+    'Onward to Aetherya! 🏆',
+    'Fight on, Aninag! ✨',
   ];
 
+  // FIX: Scroll internal container ONLY, preventing full window scroll pulling down
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [room.chatMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,7 +68,7 @@ export const GameChat: React.FC<GameChatProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Usapan & Tala</span>
+            <span>{t.tabChat}</span>
           </button>
           <button
             onClick={() => setActiveTab('players')}
@@ -68,7 +79,7 @@ export const GameChat: React.FC<GameChatProps> = ({
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Manlalakbay ({room.players.length})</span>
+            <span>{t.tabPilgrims} ({room.players.length})</span>
           </button>
         </div>
       </div>
@@ -76,8 +87,8 @@ export const GameChat: React.FC<GameChatProps> = ({
       {/* Tab Content */}
       {activeTab === 'chat' ? (
         <div className="flex-1 flex flex-col justify-between overflow-hidden">
-          {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+          {/* Messages Feed - Scrolled via ref.scrollTop */}
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
             {room.chatMessages.map((msg) => {
               const isMe = msg.sender === currentPlayer.name;
               const isSystem = msg.type === 'system';
@@ -98,7 +109,7 @@ export const GameChat: React.FC<GameChatProps> = ({
                 return (
                   <div key={msg.id} className="p-2 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-200 my-1 animate-pulse">
                     <div className="font-bold text-[11px] uppercase tracking-wider text-rose-400 flex items-center gap-1">
-                      🚨 PARATANG NG IMPOSTOR
+                      {t.accusationChatTitle}
                     </div>
                     <div className="text-xs mt-0.5">{msg.text}</div>
                   </div>
@@ -131,7 +142,6 @@ export const GameChat: React.FC<GameChatProps> = ({
                 </div>
               );
             })}
-            <div ref={chatEndRef} />
           </div>
 
           {/* Quick Reaction Pills */}
@@ -153,7 +163,7 @@ export const GameChat: React.FC<GameChatProps> = ({
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Magpadala ng mensahe..."
+              placeholder={t.chatPlaceholder}
               maxLength={150}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
@@ -168,7 +178,7 @@ export const GameChat: React.FC<GameChatProps> = ({
       ) : (
         /* Players List Tab */
         <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
-          {room.players.map((p, idx) => {
+          {room.players.map((p) => {
             const isTurn = room.players[room.currentTurnIndex]?.id === p.id;
             return (
               <div
@@ -190,21 +200,25 @@ export const GameChat: React.FC<GameChatProps> = ({
                     <div className="font-semibold text-slate-200 flex items-center gap-1.5">
                       <span>{p.name}</span>
                       {p.isHost && (
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-950 px-1.5 py-0.2 rounded border border-amber-800/40">HOST</span>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-950 px-1.5 py-0.2 rounded border border-amber-800/40">
+                          {t.hostBadge}
+                        </span>
                       )}
                       {p.isBot && (
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded border border-slate-700">BOT</span>
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded border border-slate-700">
+                          {t.botBadge}
+                        </span>
                       )}
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono">
-                      Pwesto: Tile #{p.currentTile}/50 · {p.hand?.length || 0} Baraha
+                      {t.tilePositionLabel}{p.currentTile}/50 · {p.hand?.length || 0} {t.cardsCountLabel}
                     </div>
                   </div>
                 </div>
 
                 {isTurn && (
                   <span className="text-[10px] font-bold font-cinzel text-amber-400 px-2 py-0.5 rounded-md bg-amber-950/80 border border-amber-500/40 animate-pulse">
-                    TUMITIRA
+                    {t.actingBadge}
                   </span>
                 )}
               </div>

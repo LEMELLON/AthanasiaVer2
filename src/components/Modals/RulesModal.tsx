@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { BookOpen, X, Sparkles, Shield, Skull, Compass, Flame, Droplets, Wind, Mountain, Crown } from 'lucide-react';
+import { BookOpen, X, Mountain, Flame, Droplets, Wind, Crown } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface RulesModalProps {
   onClose: () => void;
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'story' | 'realms' | 'cards' | 'rules'>('story');
 
   return (
@@ -23,7 +25,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
                 ATHANASIA: Ang Hiwaga ng Diwa
               </h2>
               <p className="text-[11px] text-slate-400 font-serif italic">
-                "Sa Likod ng Bawat Anino, May Lihim na Nakatago."
+                {t.motto}
               </p>
             </div>
           </div>
@@ -43,7 +45,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
               activeTab === 'story' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Kwento & Mitolohiya
+            {t.tabLore}
           </button>
           <button
             onClick={() => setActiveTab('realms')}
@@ -51,7 +53,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
               activeTab === 'realms' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
             }`}
           >
-            4 na Lupain (Realms)
+            {language === 'tl' ? '4 na Lupain (Realms)' : '4 Realms'}
           </button>
           <button
             onClick={() => setActiveTab('cards')}
@@ -59,7 +61,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
               activeTab === 'cards' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Mga Baraha (Decks)
+            {t.tabCardTypes}
           </button>
           <button
             onClick={() => setActiveTab('rules')}
@@ -67,7 +69,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
               activeTab === 'rules' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Alituntunin & Tagumpay
+            {t.tabTurnOrder}
           </button>
         </div>
 
@@ -75,15 +77,31 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto space-y-3 text-xs text-slate-300 pr-1">
           {activeTab === 'story' && (
             <div className="space-y-3">
-              <p>
-                Noong unang panahon sa kapuluan, ang daigdig ng mga mortal at ang kalipunan ng mga espiritu ay namumuhay sa banal na pagkakasundo na pinananatili ng <strong>Diwa</strong>—ang dalisay na tanglaw ng buhay at alaala.
-              </p>
-              <p>
-                Subalit, isang maruming kadiliman na tinawag na <strong>Karimlan</strong> ang lumason sa mga elemento. Nabasag at nanakaw ang Diwa, kaya't ang apat na elemental na lupain ay nalugmok sa walang-hanggang dapit-hapon.
-              </p>
-              <p>
-                Isang maliit na pangkat ng mga <strong>Aninag</strong> (mga pilgrim) ang naglakbay upang makarating sa <strong>Aetherya</strong>, ang lumulutang na dambana na binabantayan ng primordyal na titanong si <strong>Varyndor</strong> upang ibalik ang liwanag. Ngunit lingid sa kanilang kaalaman, may isang <strong>Impostor</strong> sa kanilang hanay na lihim na sumasabotahe sa paglalakbay!
-              </p>
+              {language === 'tl' ? (
+                <>
+                  <p>
+                    Noong unang panahon sa kapuluan, ang daigdig ng mga mortal at ang kalipunan ng mga espiritu ay namumuhay sa banal na pagkakasundo na pinananatili ng <strong>Diwa</strong>—ang dalisay na tanglaw ng buhay at alaala.
+                  </p>
+                  <p>
+                    Subalit, isang maruming kadiliman na tinawag na <strong>Karimlan</strong> ang lumason sa mga elemento. Nabasag at nanakaw ang Diwa, kaya't ang apat na elemental na lupain ay nalugmok sa walang-hanggang dapit-hapon.
+                  </p>
+                  <p>
+                    Isang maliit na pangkat ng mga <strong>Aninag</strong> (mga pilgrim) ang naglakbay upang makarating sa <strong>Aetherya</strong>, ang lumulutang na dambana na binabantayan ng primordyal na titanong si <strong>Varyndor</strong> upang ibalik ang liwanag. Ngunit lingid sa kanilang kaalaman, may isang <strong>Impostor</strong> sa kanilang hanay na lihim na sumasabotahe sa paglalakbay!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    In ancient times across the archipelago, the mortal realm and spiritual plane coexisted in sacred harmony sustained by the <strong>Diwa</strong>—the pure spark of life, soul, and memory.
+                  </p>
+                  <p>
+                    Yet an ancient corruption known as the <strong>Karimlan</strong> shattered the elements and stole the Diwa, casting the four elemental realms into perpetual twilight.
+                  </p>
+                  <p>
+                    A band of pilgrims known as the <strong>Aninag</strong> embarked on an expedition to reach <strong>Aetherya</strong>, the floating sanctuary guarded by the primordial titan <strong>Varyndor</strong> to restore the balance. Unknown to them, a corrupted <strong>Impostor</strong> walks among their ranks, working secretly to derail the journey!
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -91,37 +109,45 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
             <div className="space-y-3">
               <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
                 <div className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
-                  <Mountain className="w-4 h-4" /> Talvaris — Lupa (17 Tiles)
+                  <Mountain className="w-4 h-4" /> Talvaris — Lupa (Tiles 1-17)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300">
-                  Bantay: <strong>Ikapatar (Ikapati)</strong>. Ang sagradong lupain ng agrikultura, ugat, at guho.
+                  {language === 'tl'
+                    ? 'Bantay: Ikapatar (Ikapati). Ang sagradong lupain ng agrikultura, ugat, at guho.'
+                    : 'Guardian: Ikapatar (Ikapati). The sacred ground of soil, deep roots, and ancient ruins.'}
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40">
                 <div className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
-                  <Flame className="w-4 h-4" /> Alabarya — Apoy (14 Tiles)
+                  <Flame className="w-4 h-4" /> Alabarya — Apoy (Tiles 18-31)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300">
-                  Bantay: <strong>Sinukalab (Sinukuan)</strong>. Ang maapoy na kabundukan at bulkan ng primordial na init.
+                  {language === 'tl'
+                    ? 'Bantay: Sinukalab (Sinukuan). Ang maapoy na kabundukan at bulkan ng primordial na init.'
+                    : 'Guardian: Sinukalab (Sinukuan). Volcanic mountains and primal embers of courage and trial.'}
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/40">
                 <div className="font-bold text-cyan-300 flex items-center gap-1.5 text-xs">
-                  <Droplets className="w-4 h-4" /> Alonawon — Tubig (11 Tiles)
+                  <Droplets className="w-4 h-4" /> Alonawon — Tubig (Tiles 32-42)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300">
-                  Bantay: <strong>Sinayalon (Aman Sinaya)</strong>. Ang lumubog na dambana sa ilalim ng buwan at maalong dagat.
+                  {language === 'tl'
+                    ? 'Bantay: Sinayalon (Aman Sinaya). Ang lumubog na dambana sa ilalim ng buwan at maalong dagat.'
+                    : 'Guardian: Sinayalon (Aman Sinaya). Submerged coral temples under moonlit oceanic currents.'}
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/40">
                 <div className="font-bold text-purple-300 flex items-center gap-1.5 text-xs">
-                  <Wind className="w-4 h-4" /> Himaraya — Hangin (8 Tiles)
+                  <Wind className="w-4 h-4" /> Himaraya — Hangin (Tiles 43-49)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300">
-                  Bantay: <strong>Lihamihan (Amihan)</strong>. Ang matatayog na talampas sa hangganan ng Kaluwalhatian.
+                  {language === 'tl'
+                    ? 'Bantay: Lihamihan (Amihan). Ang matatayog na talampas sa hangganan ng Kaluwalhatian.'
+                    : 'Guardian: Lihamihan (Amihan). Sky-high ridges and celestial breezes approaching Kaluwalhatian.'}
                 </p>
               </div>
 
@@ -130,7 +156,9 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
                   <Crown className="w-4 h-4" /> Aetherya — Huling Dambana (Tile 50)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300">
-                  Bantay: <strong>Varyndor</strong>. Ang dambana kung saan hinaharap ang Huling Hamon para sa walang-hanggang Diwa.
+                  {language === 'tl'
+                    ? 'Bantay: Varyndor. Ang dambana kung saan hinaharap ang Huling Hamon para sa walang-hanggang Diwa.'
+                    : 'Guardian: Varyndor. The floating sanctuary where the Final Victory of Diwa is claimed.'}
                 </p>
               </div>
             </div>
@@ -139,28 +167,52 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
           {activeTab === 'cards' && (
             <div className="space-y-2.5">
               <div>
-                <strong className="text-amber-300 font-cinzel">1. Role Card & Guess the Impostor:</strong>
-                <p className="text-[11px] text-slate-300">Lihim na itinatalaga kung ikaw ay Ordinaryong Aninag o Impostor. Mayroon kang 1 Accusation card sa buong laro upang hulaan ang taksil.</p>
+                <strong className="text-amber-300 font-cinzel">1. Role & Accusation:</strong>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Lihim na itinatalaga kung ikaw ay Aninag o Impostor. May 1 Accusation card sa buong laro upang hulaan ang taksil.'
+                    : 'Secretly designates whether you are an Aninag pilgrim or the Impostor. Each player holds 1 single-use Accusation to unmask the traitor.'}
+                </p>
               </div>
               <div>
                 <strong className="text-amber-300 font-cinzel">2. Sumpa Cards (6 Curses):</strong>
-                <p className="text-[11px] text-slate-300">Tikbalang, Manananggal, Bakunawa, Kapre, Nuno sa Punso, at Tiyanak. Binabasa nang malakas ang pahiwatig sa simula at nagsisilbing susi sa Pintuan ng Diwaling.</p>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Tikbalang, Manananggal, Bakunawa, Kapre, Nuno sa Punso, at Tiyanak. Binabasa ang pahiwatig sa simula at nagsisilbing susi sa Pintuan ng Diwaling.'
+                    : 'Tikbalang, Manananggal, Bakunawa, Kapre, Nuno sa Punso, and Tiyanak. Their clues are read aloud at match start and serve as keys to Diwaling Gates.'}
+                </p>
               </div>
               <div>
                 <strong className="text-amber-300 font-cinzel">3. Pahiwatig Cards (18 Gate Riddles):</strong>
-                <p className="text-[11px] text-slate-300">Kinakaharap sa Pintuan ng Diwaling. Nagtatanong kung sino ang may hawak ng partikular na sumpa. Kapag nahulaan ng grupo, bubukas ang tarangkahan.</p>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Kinakaharap sa Pintuan ng Diwaling. Nagtatanong kung sino ang may hawak ng partikular na sumpa upang mabuksan ang daan.'
+                    : 'Encountered at each Diwaling Gate. Prompts the group to identify which player bears the corresponding Sumpa to unseal passage.'}
+                </p>
               </div>
               <div>
-                <strong className="text-amber-300 font-cinzel">4. Pagsubok Cards (60 Challenges):</strong>
-                <p className="text-[11px] text-slate-300">Riddles (Bugtong), Pambansang Sagisag trivia, Kasabihan, 5-segundong bilisan, Tongue twisters, at Sawikain. Ang tamang sagot ay nagbibigay ng Biyaya card.</p>
+                <strong className="text-amber-300 font-cinzel">4. Pagsubok Cards (60 Lore Trials):</strong>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Bugtong, Pambansang Sagisag, Kasabihan, 5-segundong bilisan, Tongue twisters, at Sawikain. Ang tamang sagot ay nagbibigay ng Biyaya card.'
+                    : 'Bugtong riddles, National symbols, Proverbs, 5-second speed trivia, Tongue twisters, and Idioms. Correct answers grant Biyaya cards.'}
+                </p>
               </div>
               <div>
                 <strong className="text-amber-300 font-cinzel">5. Biyaya Cards (30 Action Cards):</strong>
-                <p className="text-[11px] text-slate-300">Uno-style utility cards tulad ng Abante (sulung), Baliktad (urong), Harang (skip), Kalasag (shield laban sa negatibong epekto), at Palit-Pwesto sa parehong lupain.</p>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Utility cards tulad ng Sulong, Urong, Harang (skip), Kalasag (Anting-Anting shield), at Palit-Pwesto sa kapwa manlalakbay.'
+                    : 'Utility cards like Advance, Retract, Skip turn, Anting-Anting shield, and Position swap with fellow travelers in the same realm.'}
+                </p>
               </div>
               <div>
                 <strong className="text-amber-300 font-cinzel">6. Kapalaran Cards (30 Dilemma Cards):</strong>
-                <p className="text-[11px] text-slate-300">Choice A vs Choice B na nagbibigay ng gantimpala o mga hamon sa paglalakbay.</p>
+                <p className="text-[11px] text-slate-300">
+                  {language === 'tl'
+                    ? 'Panganib at biyaya (Choice A vs Choice B) na sumusubok sa tapang at diskarte ng manlalakbay.'
+                    : 'Risk versus reward dilemmas (Choice A vs Choice B) testing pilgrim courage and calculated strategy.'}
+                </p>
               </div>
             </div>
           )}
@@ -168,20 +220,24 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
           {activeTab === 'rules' && (
             <div className="space-y-3">
               <div>
-                <h4 className="font-bold text-amber-300 font-cinzel">Pagkakasunod ng Tira (Turn Sequence):</h4>
+                <h4 className="font-bold text-amber-300 font-cinzel">
+                  {language === 'tl' ? 'Pagkakasunod ng Tira (Turn Sequence):' : 'Turn Sequence:'}
+                </h4>
                 <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-300 mt-1">
-                  <li><strong>Roll:</strong> Pagulungin ang dice at lumipat sa kaukulang tile.</li>
-                  <li><strong>Tile Event:</strong> Harapin ang Diwaling Gate, Pagsubok, o Kapalaran ayon sa napuntahang espasyo.</li>
-                  <li><strong>Action:</strong> Maglaro ng Biyaya cards mula sa iyong kamay o magsagawa ng Impostor Accusation kung may hinala.</li>
-                  <li><strong>End:</strong> Ipasa ang tira sa susunod na manlalaro.</li>
+                  <li><strong>Roll:</strong> {language === 'tl' ? 'Pagulungin ang dice at lumipat sa kaukulang tile.' : 'Roll the dice and advance to the target tile.'}</li>
+                  <li><strong>Tile Event:</strong> {language === 'tl' ? 'Harapin ang Pintuan ng Diwaling, Pagsubok, o Kapalaran.' : 'Resolve the Diwaling Gate, Pagsubok, or Kapalaran dilemma on your tile.'}</li>
+                  <li><strong>Action:</strong> {language === 'tl' ? 'Maglaro ng Biyaya card o magsagawa ng Impostor Accusation.' : 'Play optional Biyaya action cards or make an Impostor accusation.'}</li>
+                  <li><strong>End:</strong> {language === 'tl' ? 'Ipasa ang tira sa susunod na kasama.' : 'End your turn and pass play to the next traveler.'}</li>
                 </ol>
               </div>
 
               <div>
-                <h4 className="font-bold text-amber-300 font-cinzel">Kondisyon ng Tagumpay:</h4>
+                <h4 className="font-bold text-amber-300 font-cinzel">
+                  {language === 'tl' ? 'Kondisyon ng Tagumpay:' : 'Victory Conditions:'}
+                </h4>
                 <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300 mt-1">
-                  <li><strong>Tagumpay ng Aninag:</strong> Maabot ang Tile 50 (Aetherya), buksan ang mga tarangkahan, o maalis ang Impostor gamit ang tamang Accusation.</li>
-                  <li><strong>Tagumpay ng Impostor:</strong> Mapigilan ang mga Aninag na maabot ang dambana o makarating sa Aetherya nang hindi nabubunyag ang lihim.</li>
+                  <li><strong>{language === 'tl' ? 'Tagumpay ng Aninag:' : 'Aninag Victory:'}</strong> {language === 'tl' ? 'Maabot ang Tile 50 (Aetherya) o maalis ang Impostor gamit ang tamang paratang.' : 'Reach Tile 50 (Aetherya) or eliminate the Impostor with a correct accusation.'}</li>
+                  <li><strong>{language === 'tl' ? 'Tagumpay ng Impostor:' : 'Impostor Victory:'}</strong> {language === 'tl' ? 'Makarating sa Aetherya o mapigilan ang mga Aninag nang hindi nabubunyag.' : 'Reach Aetherya first or sabotage the pilgrims without being unmasked.'}</li>
                 </ul>
               </div>
             </div>
@@ -194,7 +250,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
             onClick={() => { sounds.playClick(); onClose(); }}
             className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-cinzel text-xs font-bold transition-colors cursor-pointer"
           >
-            Naiintindihan Ko Na
+            {t.closeBtn}
           </button>
         </div>
       </div>

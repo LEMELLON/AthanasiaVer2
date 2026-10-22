@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { GameRoom, PlayerState } from '../../types/game';
-import { AlertTriangle, Skull, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertTriangle, Skull, ShieldCheck } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AccusationModalProps {
   room: GameRoom;
@@ -16,6 +17,7 @@ export const AccusationModal: React.FC<AccusationModalProps> = ({
   onAccuse,
   onClose,
 }) => {
+  const { t, language } = useLanguage();
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
 
   const candidates = room.players.filter(p => p.id !== currentPlayer.id && !p.isEliminated);
@@ -36,13 +38,13 @@ export const AccusationModal: React.FC<AccusationModalProps> = ({
             <AlertTriangle className="w-6 h-6" />
           </div>
           <span className="font-cinzel text-xs font-bold tracking-widest text-rose-400 uppercase">
-            Hulaan ang Impostor
+            {t.accusationTitle}
           </span>
           <h2 className="font-cinzel text-lg font-bold text-rose-100">
-            Sino ang Taksil sa Hanay?
+            {language === 'tl' ? 'Sino ang Taksil sa Hanay?' : 'Who is the Traitor in Your Ranks?'}
           </h2>
           <p className="text-xs text-rose-200/80 max-w-sm">
-            Isang beses mo lamang ito magagamit sa buong laro! Tiyaking handa ka sa magiging kapalit:
+            {t.accusationWarning}
           </p>
         </div>
 
@@ -51,23 +53,31 @@ export const AccusationModal: React.FC<AccusationModalProps> = ({
           <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-200">
             <div className="font-bold text-emerald-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>KAPAG TAMA:</span>
+              <span>{language === 'tl' ? 'KAPAG TAMA:' : 'IF CORRECT:'}</span>
             </div>
-            <p className="mt-1">Awtomatikong diretso sa Aetherya, may 1 reward card, at matatanggal ang Impostor.</p>
+            <p className="mt-1">
+              {language === 'tl'
+                ? 'Diretso sa Aetherya (Tile 50) at aalisin ang Impostor sa laro.'
+                : 'Instantly advance to Aetherya (Tile 50) and eliminate the Impostor.'}
+            </p>
           </div>
           <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-200">
             <div className="font-bold text-rose-400 flex items-center gap-1">
               <Skull className="w-3.5 h-3.5" />
-              <span>KAPAG MALI:</span>
+              <span>{language === 'tl' ? 'KAPAG MALI:' : 'IF WRONG:'}</span>
             </div>
-            <p className="mt-1">Babalik ka sa Tile 0 (Start) at mawawalan ng tira sa susunod na 1 buong round!</p>
+            <p className="mt-1">
+              {language === 'tl'
+                ? 'Babalik ka sa Tile 0 (Start) at mawawalan ng tira sa susunod na 1 buong round!'
+                : 'Return to Tile 0 (Start) and lose your turn for the next round!'}
+            </p>
           </div>
         </div>
 
         {/* Suspect Candidate Selection */}
         <div className="flex flex-col gap-2 text-left">
           <label className="text-xs font-medium text-slate-300">
-            Piliin ang manlalaro na aakusahan:
+            {t.accusationPrompt}
           </label>
           <div className="grid grid-cols-2 gap-2">
             {candidates.map((p) => {
@@ -96,7 +106,7 @@ export const AccusationModal: React.FC<AccusationModalProps> = ({
             onClick={() => { sounds.playClick(); onClose(); }}
             className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-cinzel text-xs font-semibold cursor-pointer"
           >
-            Huwag Muna (Kanselahin)
+            {t.cancelBtn}
           </button>
           <button
             onClick={handleSubmit}
@@ -107,7 +117,7 @@ export const AccusationModal: React.FC<AccusationModalProps> = ({
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
             }`}
           >
-            IPATUPAD ANG PARATANG!
+            {t.accusationConfirmBtn}
           </button>
         </div>
       </div>

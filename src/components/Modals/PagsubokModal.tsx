@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { GameCard, GameRoom, PlayerState } from '../../types/game';
-import { HelpCircle, Clock, CheckCircle, XCircle, Sparkles, Send } from 'lucide-react';
+import { GameRoom, PlayerState } from '../../types/game';
+import { HelpCircle, Clock, Send } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PagsubokModalProps {
   room: GameRoom;
@@ -14,6 +15,7 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
   currentPlayer,
   onSubmitAnswer,
 }) => {
+  const { t, language } = useLanguage();
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [customText, setCustomText] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState<number>(15);
@@ -21,7 +23,6 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
   const card = room.activeEventCard;
   const isMyTurn = room.players[room.currentTurnIndex]?.id === currentPlayer.id;
 
-  // 15-second countdown timer for active player
   useEffect(() => {
     if (!isMyTurn || timeLeft <= 0) return;
 
@@ -29,7 +30,6 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Timeout counts as incorrect submit
           onSubmitAnswer(selectedOption || customText || 'Time expired');
           return 0;
         }
@@ -56,12 +56,12 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
   };
 
   const categoryNames: Record<string, string> = {
-    bugtong: 'Tradisyunal na Bugtong',
-    sagisag: 'Pambansang Sagisag ng Pilipinas',
-    kasabihan: 'Kasabihan & Salawikain',
-    speed_trivia: 'Mabilisang Pagsubok sa 5 Segundo',
-    tongue_twister: 'Pabilisan ng Dila (Tongue Twister)',
-    idiom: 'Sawikain & Salitang Matalinghaga',
+    bugtong: language === 'tl' ? 'Tradisyunal na Bugtong' : 'Traditional Riddle (Bugtong)',
+    sagisag: language === 'tl' ? 'Pambansang Sagisag ng Pilipinas' : 'Philippine National Symbols',
+    kasabihan: language === 'tl' ? 'Kasabihan & Salawikain' : 'Proverbs & Sayings (Kasabihan)',
+    speed_trivia: language === 'tl' ? 'Mabilisang Pagsubok sa 5 Segundo' : '5-Second Speed Trivia',
+    tongue_twister: language === 'tl' ? 'Pabilisan ng Dila (Tongue Twister)' : 'Tongue Twister Challenge',
+    idiom: language === 'tl' ? 'Sawikain & Salitang Matalinghaga' : 'Idiomatic Expressions (Sawikain)',
   };
 
   return (
@@ -73,7 +73,7 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
             <HelpCircle className="w-6 h-6" />
           </div>
           <span className="font-cinzel text-xs font-bold tracking-widest text-amber-400 uppercase">
-            {categoryNames[card.category || 'bugtong'] || 'Pagsubok sa Daan'}
+            {categoryNames[card.category || 'bugtong'] || (language === 'tl' ? 'Pagsubok sa Daan' : 'Trial of the Path')}
           </span>
           <h2 className="font-cinzel text-lg font-bold text-amber-100">
             {card.title}
@@ -88,7 +88,7 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
               : 'bg-slate-900/80 border-slate-700 text-slate-300'
           }`}>
             <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span>Natitirang Oras: {timeLeft}s</span>
+            <span>{language === 'tl' ? 'Natitirang Oras:' : 'Time Remaining:'} {timeLeft}s</span>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
             "{card.question}"
           </p>
           <div className="text-[11px] text-slate-400 mt-2">
-            Gantimpala sa Tamang Sagot: 1 Biyaya card · Parusa sa Mali: Mawawalan ng 1 tira.
+            {t.pagsubokNotice}
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
                   type="text"
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
-                  placeholder="I-type ang iyong sagot..."
+                  placeholder={t.pagsubokInputPlaceholder}
                   className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-500"
                 />
               </form>
@@ -147,12 +147,14 @@ export const PagsubokModal: React.FC<PagsubokModalProps> = ({
               }`}
             >
               <Send className="w-4 h-4" />
-              <span>IPASA ANG SAGOT</span>
+              <span>{t.pagsubokSubmitBtn}</span>
             </button>
           </div>
         ) : (
           <div className="py-4 text-center text-xs text-amber-300 font-medium bg-amber-950/40 rounded-xl border border-amber-500/30">
-            Kasalukuyang sinasagutan ni {room.players[room.currentTurnIndex]?.name} ang Pagsubok...
+            {language === 'tl'
+              ? `Kasalukuyang sinasagutan ni ${room.players[room.currentTurnIndex]?.name} ang Pagsubok...`
+              : `${room.players[room.currentTurnIndex]?.name} is currently attempting the Pagsubok...`}
           </div>
         )}
       </div>

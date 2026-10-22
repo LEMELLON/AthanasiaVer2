@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { GameCard, GameRoom, PlayerState } from '../../types/game';
-import { Shuffle, Compass, Sparkles, AlertTriangle } from 'lucide-react';
+import { GameRoom, PlayerState } from '../../types/game';
+import { Shuffle, Compass } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface KapalaranModalProps {
   room: GameRoom;
@@ -14,6 +15,7 @@ export const KapalaranModal: React.FC<KapalaranModalProps> = ({
   currentPlayer,
   onChooseOption,
 }) => {
+  const { t, language } = useLanguage();
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   const card = room.activeEventCard;
@@ -37,7 +39,7 @@ export const KapalaranModal: React.FC<KapalaranModalProps> = ({
             <Shuffle className="w-6 h-6" />
           </div>
           <span className="font-cinzel text-xs font-bold tracking-widest text-violet-400 uppercase">
-            Kapalaran — Pagsubok ng Tadhana
+            {t.kapalaranTitle}
           </span>
           <h2 className="font-cinzel text-lg font-bold text-violet-100">
             {card.title}
@@ -50,7 +52,7 @@ export const KapalaranModal: React.FC<KapalaranModalProps> = ({
         {/* Narrative Dilemma Choices */}
         <div className="flex flex-col gap-3 mt-1 text-left">
           <span className="text-xs font-medium text-slate-300">
-            Piliin ang iyong tatahakin (Bahala Na o Masinop na Pag-iingat):
+            {t.kapalaranPrompt}
           </span>
 
           {card.choices?.map((choice, idx) => {
@@ -71,15 +73,15 @@ export const KapalaranModal: React.FC<KapalaranModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="font-cinzel text-xs font-bold text-amber-300 flex items-center gap-1.5">
                     <Compass className="w-4 h-4 text-violet-400" />
-                    <span>Pagpipilian {idx === 0 ? 'A' : 'B'}: {choice.label}</span>
+                    <span>{language === 'tl' ? 'Pagpipilian' : 'Choice'} {idx === 0 ? 'A' : 'B'}: {choice.label}</span>
                   </span>
                   {idx === 0 ? (
                     <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      Gantimpala / Ingat
+                      {language === 'tl' ? 'Gantimpala / Ingat' : 'Reward / Caution'}
                     </span>
                   ) : (
                     <span className="text-[10px] text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/30">
-                      Panganib / Bilis
+                      {language === 'tl' ? 'Panganib / Bilis' : 'Risk / Velocity'}
                     </span>
                   )}
                 </div>
@@ -93,7 +95,9 @@ export const KapalaranModal: React.FC<KapalaranModalProps> = ({
 
         {!isMyTurn && (
           <div className="py-2 text-center text-xs text-violet-300 font-medium bg-violet-950/40 rounded-xl border border-violet-500/30">
-            Kasalukuyang pumipili si {room.players[room.currentTurnIndex]?.name} sa kanyang Kapalaran...
+            {language === 'tl'
+              ? `Kasalukuyang pumipili si ${room.players[room.currentTurnIndex]?.name} sa kanyang Kapalaran...`
+              : `${room.players[room.currentTurnIndex]?.name} is currently deciding their Kapalaran...`}
           </div>
         )}
       </div>
