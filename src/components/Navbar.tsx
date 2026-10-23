@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, ShieldAlert, BookOpen, Settings, Copy, Check, LogOut, Flame, Droplets, Wind, Mountain, Crown, User, Compass } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, BookOpen, Settings, Copy, Check, LogOut, Flame, Droplets, Wind, Mountain, Crown, User, Compass, Languages } from 'lucide-react';
 import { GameRoom, PlayerState, RealmType } from '../types/game';
 import { sounds } from '../utils/audio';
 import { getPlayerRealm } from '../utils/modularCardEngine';
+import { useLanguage } from '../utils/i18n';
 
 interface NavbarProps {
   room: GameRoom | null;
@@ -23,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMapEditor,
   onLeaveRoom,
 }) => {
+  const { language, setLanguage, t } = useLanguage();
   const [isMuted, setIsMuted] = useState(sounds.getMuted());
   const [copied, setCopied] = useState(false);
 
@@ -51,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-amber-900/30 px-4 py-2.5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-amber-900/30 px-4 py-2 flex items-center justify-between gap-4">
       {/* Brand Title */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-600 via-amber-800 to-slate-900 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-950/50">
@@ -72,9 +74,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={copyRoomCode}
             className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
-            title="Kopyahin ang Room Code"
+            title={t.roomCode}
           >
-            <span className="text-slate-400">Silid:</span>
+            <span className="text-slate-400">{t.roomCode}:</span>
             <span className="font-mono font-bold tracking-wider text-amber-300">{room.code}</span>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
           </button>
@@ -104,11 +106,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Actions & Utilities */}
       <div className="flex items-center gap-2">
+        {/* Language Segmented Toggle (EN | TL) */}
+        <div className="flex items-center rounded-lg bg-slate-900/90 border border-slate-700/80 p-0.5 text-xs font-semibold">
+          <button
+            onClick={() => { sounds.playClick(); setLanguage('en'); }}
+            className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
+              language === 'en'
+                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="English UI"
+          >
+            EN
+          </button>
+          <button
+            onClick={() => { sounds.playClick(); setLanguage('tl'); }}
+            className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
+              language === 'tl'
+                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Tagalog UI"
+          >
+            TL
+          </button>
+        </div>
+
         {/* Audio Toggle */}
         <button
           onClick={toggleSound}
-          className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors"
-          title={isMuted ? 'I-unmute ang Tunog' : 'I-mute ang Tunog'}
+          className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
+          title={isMuted ? t.musicOn : t.musicOff}
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
         </button>
@@ -118,10 +146,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => { sounds.playClick(); onOpenMapEditor(); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
-            title="Buksan ang Tile Map Editor"
+            title={t.mapEditor}
           >
             <Compass className="w-4 h-4 text-amber-400" />
-            <span className="hidden sm:inline">Map Editor</span>
+            <span className="hidden sm:inline">{t.mapEditor}</span>
           </button>
         )}
 
@@ -130,10 +158,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => { sounds.playClick(); onOpenProfile(); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-600/40 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
-            title="Profile ng Manlalakbay"
+            title={t.profile}
           >
             <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Profile</span>
+            <span className="hidden sm:inline">{t.profile}</span>
           </button>
         )}
 
@@ -141,16 +169,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           onClick={() => { sounds.playClick(); onOpenRules(); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
+          title={t.rules}
         >
           <BookOpen className="w-4 h-4 text-amber-400" />
-          <span className="hidden sm:inline">Gabay</span>
+          <span className="hidden sm:inline">{t.rules}</span>
         </button>
 
         {/* Admin Button */}
         <button
           onClick={() => { sounds.playClick(); onOpenAdmin(); }}
           className="p-2 rounded-lg bg-amber-950/40 border border-amber-600/30 text-amber-300 hover:bg-amber-900/50 hover:border-amber-500 transition-colors cursor-pointer"
-          title="Admin Suite (System Settings & Card Builder)"
+          title={t.admin}
         >
           <Settings className="w-4 h-4" />
         </button>
@@ -159,8 +188,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         {room && (
           <button
             onClick={() => { sounds.playClick(); onLeaveRoom(); }}
-            className="p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 hover:bg-rose-900/50 hover:border-rose-500 transition-colors"
-            title="Umalis sa Silid"
+            className="p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 hover:bg-rose-900/50 hover:border-rose-500 transition-colors cursor-pointer"
+            title={t.leaveRoom}
           >
             <LogOut className="w-4 h-4" />
           </button>

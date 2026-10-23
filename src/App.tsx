@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GameRoom, PlayerState, AdminSettings, GameCard, TileMapData } from './types/game';
+import { GameRoom, PlayerState, AdminSettings, TileMapData } from './types/game';
 import { Navbar } from './components/Navbar';
 import { MatchmakingLobby } from './components/Lobby/MatchmakingLobby';
 import { GameBoard } from './components/Board/GameBoard';
@@ -23,9 +23,11 @@ import { TileMapEditor } from './components/MapEditor/TileMapEditor';
 import { DEFAULT_ADMIN_SETTINGS } from './data/canonicalCards';
 import { loadPilgrimProfile } from './utils/cookie';
 import { sounds } from './utils/audio';
-import { Play, Users, Bot, Crown, Sparkles, AlertCircle, Trash2, MapPin, Compass } from 'lucide-react';
+import { LanguageProvider, useLanguage } from './utils/i18n';
+import { Play, Users, Bot, AlertCircle, Trash2, MapPin } from 'lucide-react';
 
-export default function App() {
+function AthanasiaAppContent() {
+  const { t } = useLanguage();
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
   const [currentPlayerId, setCurrentPlayerId] = useState<string>(() => localStorage.getItem('athanasia_player_id') || '');
   const [adminSettings, setAdminSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
@@ -70,7 +72,7 @@ export default function App() {
       };
 
       ws.onerror = () => {
-        // Fallback to HTTP polling if WS fails (e.g. serverless)
+        // Fallback to HTTP polling if WS fails
       };
     } catch {}
 
@@ -99,13 +101,13 @@ export default function App() {
     if (currentRoom && currentPlayerId) {
       const isStillMember = currentRoom.players.some(p => p.id === currentPlayerId);
       if (!isStillMember) {
-        showToast('Pinaalis ka ng Host mula sa silid ng paglalakbay.');
+        showToast(t.kickedToast);
         setCurrentRoom(null);
         setCurrentPlayerId('');
         localStorage.removeItem('athanasia_player_id');
       }
     }
-  }, [currentRoom, currentPlayerId]);
+  }, [currentRoom, currentPlayerId, t.kickedToast]);
 
   // Dispatch an action to the server
   const sendRoomAction = async (action: string, payload?: any) => {
@@ -180,7 +182,7 @@ export default function App() {
           }
         }
       }
-    } catch (err) {
+    } catch {
       showToast('Hindi makalikha ng silid. Pakisubukang muli.');
     }
   };
@@ -269,7 +271,7 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 flex-wrap gap-2">
               <div>
                 <span className="text-xs font-cinzel font-bold text-amber-400 uppercase tracking-widest">
-                  Silid ng Paglalakbay
+                  {t.lobby}
                 </span>
                 <h2 className="text-xl font-bold font-cinzel text-amber-100 mt-0.5">
                   {currentRoom.name}
@@ -277,12 +279,12 @@ export default function App() {
                 <div className="flex items-center gap-2 mt-1">
                   <MapPin className="w-3.5 h-3.5 text-amber-400" />
                   <span className="text-xs text-amber-300/90 font-medium font-cinzel">
-                    Mapa: {currentRoom.mapData?.name || 'Canonical Diwa Sanctuary (50 Tiles)'}
+                    {t.selectMap}: {currentRoom.mapData?.name || 'Canonical Diwa Sanctuary (50 Tiles)'}
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">Code ng Silid:</span>
+                <span className="text-xs text-slate-400">{t.roomCode}:</span>
                 <span className="font-mono font-bold text-base px-3 py-1 rounded-xl bg-slate-950 border border-amber-500/50 text-amber-300 tracking-wider">
                   {currentRoom.code}
                 </span>
@@ -294,7 +296,7 @@ export default function App() {
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-3">
                 <span className="flex items-center gap-1.5 font-cinzel">
                   <Users className="w-4 h-4 text-amber-400" />
-                  <span>Mga Kasamang Manlalakbay ({currentRoom.players.length}/{currentRoom.maxPlayers})</span>
+                  <span>{t.playersInLobby} ({currentRoom.players.length}/{currentRoom.maxPlayers})</span>
                 </span>
                 {currentPlayer?.isHost && currentRoom.players.length < currentRoom.maxPlayers && (
                   <button
@@ -302,7 +304,7 @@ export default function App() {
                     className="flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs border border-slate-700 cursor-pointer font-medium"
                   >
                     <Bot className="w-3.5 h-3.5" />
-                    <span>Magdagdag ng AI Bot</span>
+                    <span>{t.addAiCompanion}</span>
                   </button>
                 )}
               </div>
@@ -328,7 +330,7 @@ export default function App() {
                             )}
                           </div>
                           <div className="text-[11px] text-slate-400 font-serif italic mt-0.5">
-                            Handa na para sa Athanasia
+                            Ready for Athanasia
                           </div>
                         </div>
                       </div>
@@ -338,7 +340,7 @@ export default function App() {
                         <button
                           onClick={() => handleKickPlayer(p.id, p.name)}
                           className="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-950/60 border border-transparent hover:border-rose-800 cursor-pointer transition-all"
-                          title={`Paalisin si ${p.name}`}
+                          title={t.kickPlayer}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -353,8 +355,8 @@ export default function App() {
             <div className="border-t border-slate-800 pt-4 flex items-center justify-between flex-wrap gap-3">
               <div className="text-xs text-slate-400">
                 {currentRoom.players.length < 2
-                  ? 'Kailangan ng hindi bababa sa 2 manlalaro (o magdagdag ng AI bots) upang makapagsimula.'
-                  : 'Kumpleto na ang paghahanda! Maaari nang simulan ang paglalakbay.'}
+                  ? t.needMorePlayers
+                  : 'All pilgrims assembled! The path through the realms awaits.'}
               </div>
 
               {currentPlayer?.isHost ? (
@@ -368,11 +370,11 @@ export default function App() {
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>SIMULAN ANG LARO</span>
+                  <span>{t.startGame}</span>
                 </button>
               ) : (
                 <div className="text-xs text-amber-300 font-medium">
-                  Hinihintay ang Host na simulan ang laro...
+                  {t.waitingForHost}
                 </div>
               )}
             </div>
@@ -513,5 +515,13 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AthanasiaAppContent />
+    </LanguageProvider>
   );
 }

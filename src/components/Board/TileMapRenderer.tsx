@@ -22,6 +22,12 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
   const tiles = mapData.tiles || CANONICAL_MAP_DATA.tiles;
   const territories = mapData.territories || CANONICAL_MAP_DATA.territories || [];
 
+  // Determine dynamic canvas bounds based on tile coordinates
+  const isLargeLattice = tiles.some(t => (t.posX ?? 0) > 1120 || (t.posY ?? 0) > 670);
+  const viewWidth = isLargeLattice ? 1750 : 1160;
+  const viewHeight = isLargeLattice ? 1750 : 700;
+  const sizeMult = isLargeLattice ? 1.45 : 1.0;
+
   // Realm styling palette
   const realmTheme: Record<RealmType, { border: string; fill: string; glow: string; text: string; icon: any }> = {
     talvaris: {
@@ -62,7 +68,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
   };
 
   // Helper to generate triangle SVG polygon points
-  const getTrianglePoints = (cx: number, cy: number, orientation: 'up' | 'down' = 'up', size = 26): string => {
+  const getTrianglePoints = (cx: number, cy: number, orientation: 'up' | 'down' = 'up', size = 24 * sizeMult): string => {
     const h = size * 1.15;
     const w = size * 1.15;
     if (orientation === 'up') {
@@ -73,7 +79,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
   };
 
   // Helper to generate regular hexagon SVG polygon points for gates & sanctuary
-  const getHexagonPoints = (cx: number, cy: number, r = 30): string => {
+  const getHexagonPoints = (cx: number, cy: number, r = 30 * sizeMult): string => {
     const points: string[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i - Math.PI / 6;
@@ -93,8 +99,8 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
   return (
     <div className="relative w-full overflow-x-auto select-none rounded-3xl bg-[#080c14] border border-amber-500/30 p-2 shadow-2xl">
       <svg
-        viewBox="0 0 1160 700"
-        className="w-full min-w-[1000px] h-auto drop-shadow-xl"
+        viewBox={`0 0 ${viewWidth} ${viewHeight}`}
+        className="w-full min-w-[900px] h-auto drop-shadow-xl"
         style={{ filter: 'contrast(1.05)' }}
       >
         <defs>
@@ -130,7 +136,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
               x={terr.labelX}
               y={terr.labelY}
               fill={realmTheme[terr.realm].text}
-              fontSize="12"
+              fontSize={isLargeLattice ? "20" : "12"}
               fontFamily="Cinzel, serif"
               fontWeight="bold"
               letterSpacing="2"
@@ -145,8 +151,8 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
         <path
           d={pathD}
           fill="none"
-          stroke="rgba(245, 158, 11, 0.35)"
-          strokeWidth="3.5"
+          stroke="rgba(245, 158, 11, 0.4)"
+          strokeWidth={isLargeLattice ? "4.5" : "3.5"}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray="6,4"
@@ -165,7 +171,6 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
           // Players on this tile
           const playersHere = room.players.filter((p) => p.currentTile === tile.index && !p.isEliminated);
           const isCurrentTurnHere = room.players[room.currentTurnIndex]?.currentTile === tile.index;
-          const isUserHere = currentPlayer?.currentTile === tile.index;
 
           return (
             <g
@@ -182,7 +187,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={isAetherya ? 44 : isGate ? 36 : 30}
+                  r={(isAetherya ? 48 : isGate ? 38 : 32) * sizeMult}
                   fill="none"
                   stroke={isSelected ? '#fbbf24' : '#60a5fa'}
                   strokeWidth="2.5"
@@ -197,34 +202,34 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 /* AETHERYA SANCTUARY (Large Glowing Sun Hexagon) */
                 <g>
                   <polygon
-                    points={getHexagonPoints(cx, cy, 38)}
+                    points={getHexagonPoints(cx, cy, 42 * sizeMult)}
                     fill="url(#aetheryaSun)"
                     stroke="#eab308"
-                    strokeWidth="3"
+                    strokeWidth="3.5"
                     filter="url(#tileGlow)"
                   />
                   <polygon
-                    points={getHexagonPoints(cx, cy, 30)}
+                    points={getHexagonPoints(cx, cy, 32 * sizeMult)}
                     fill="#451a03"
                     stroke="#fef08a"
                     strokeWidth="1.5"
                   />
                   <text
                     x={cx}
-                    y={cy - 2}
+                    y={cy - 3}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="#fef08a"
-                    fontSize="18"
+                    fontSize={isLargeLattice ? "24" : "18"}
                   >
                     👑
                   </text>
                   <text
                     x={cx}
-                    y={cy + 18}
+                    y={cy + (isLargeLattice ? 24 : 18)}
                     textAnchor="middle"
                     fill="#fde047"
-                    fontSize="8"
+                    fontSize={isLargeLattice ? "12" : "8"}
                     fontFamily="Cinzel, serif"
                     fontWeight="bold"
                   >
@@ -235,14 +240,14 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 /* DIWALING GATE (Double-Bordered Hexagon) */
                 <g>
                   <polygon
-                    points={getHexagonPoints(cx, cy, 27)}
+                    points={getHexagonPoints(cx, cy, 29 * sizeMult)}
                     fill={isGateUnlocked ? '#064e3b' : '#1e1b4b'}
                     stroke={isGateUnlocked ? '#10b981' : '#f59e0b'}
                     strokeWidth="2.5"
                     filter="url(#tileGlow)"
                   />
                   <polygon
-                    points={getHexagonPoints(cx, cy, 22)}
+                    points={getHexagonPoints(cx, cy, 23 * sizeMult)}
                     fill={isGateUnlocked ? '#047857' : '#0f172a'}
                     stroke={isGateUnlocked ? '#34d399' : '#d97706'}
                     strokeWidth="1"
@@ -253,16 +258,16 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill={isGateUnlocked ? '#6ee7b7' : '#fbbf24'}
-                    fontSize="12"
+                    fontSize={isLargeLattice ? "16" : "12"}
                   >
                     {isGateUnlocked ? '🔓' : '🔒'}
                   </text>
                   <text
                     x={cx}
-                    y={cy + 16}
+                    y={cy + (isLargeLattice ? 22 : 16)}
                     textAnchor="middle"
                     fill="#fcd34d"
-                    fontSize="7"
+                    fontSize={isLargeLattice ? "10" : "7"}
                     fontFamily="Cinzel, serif"
                     fontWeight="bold"
                   >
@@ -273,7 +278,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 /* TRIANGULAR TILES (Upright ▲ or Inverted ▼) */
                 <g>
                   <polygon
-                    points={getTrianglePoints(cx, cy, tile.orientation || 'up', 22)}
+                    points={getTrianglePoints(cx, cy, tile.orientation || 'up', 24 * sizeMult)}
                     fill={
                       tile.type === 'pagsubok'
                         ? '#2e1065'
@@ -288,7 +293,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                         ? '#ef4444'
                         : theme.border
                     }
-                    strokeWidth="2"
+                    strokeWidth="2.2"
                     filter={isSelected ? 'url(#tileGlow)' : undefined}
                     opacity="0.95"
                   />
@@ -296,7 +301,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                   <circle
                     cx={cx}
                     cy={tile.orientation === 'down' ? cy - 2 : cy + 2}
-                    r="9"
+                    r={10 * sizeMult}
                     fill="rgba(15, 23, 42, 0.7)"
                     stroke="rgba(245, 158, 11, 0.3)"
                     strokeWidth="0.8"
@@ -313,7 +318,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                         ? '#fecaca'
                         : '#cbd5e1'
                     }
-                    fontSize="9"
+                    fontSize={isLargeLattice ? "13" : "9"}
                     fontWeight="bold"
                   >
                     {tile.type === 'pagsubok'
@@ -330,10 +335,10 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
               {/* TILE INDEX BADGE */}
               <text
                 x={cx}
-                y={tile.orientation === 'down' ? cy + 21 : cy - 19}
+                y={tile.orientation === 'down' ? cy + (isLargeLattice ? 30 : 21) : cy - (isLargeLattice ? 27 : 19)}
                 textAnchor="middle"
                 fill="#94a3b8"
-                fontSize="7"
+                fontSize={isLargeLattice ? "10" : "7"}
                 fontFamily="monospace"
                 fontWeight="bold"
               >
@@ -345,30 +350,30 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 <g transform={`translate(${cx}, ${cy})`}>
                   {playersHere.map((p, pIdx) => {
                     const isPturn = room.players[room.currentTurnIndex]?.id === p.id;
-                    const offset = (pIdx - (playersHere.length - 1) / 2) * 16;
+                    const offset = (pIdx - (playersHere.length - 1) / 2) * (20 * sizeMult);
                     return (
                       <g
                         key={p.id}
-                        transform={`translate(${offset}, ${-24})`}
+                        transform={`translate(${offset}, ${-(30 * sizeMult)})`}
                         className={isPturn ? 'animate-bounce' : ''}
                       >
                         <circle
                           cx="0"
                           cy="0"
-                          r="11"
+                          r={13 * sizeMult}
                           fill="#0f172a"
                           stroke={isPturn ? '#f59e0b' : '#38bdf8'}
-                          strokeWidth="2"
+                          strokeWidth="2.5"
                         />
                         <clipPath id={`avatarClip_${p.id}_${tile.index}`}>
-                          <circle cx="0" cy="0" r="10" />
+                          <circle cx="0" cy="0" r={12 * sizeMult} />
                         </clipPath>
                         <image
                           href={p.avatar}
-                          x="-10"
-                          y="-10"
-                          width="20"
-                          height="20"
+                          x={-(12 * sizeMult)}
+                          y={-(12 * sizeMult)}
+                          width={24 * sizeMult}
+                          height={24 * sizeMult}
                           clipPath={`url(#avatarClip_${p.id}_${tile.index})`}
                         />
                       </g>

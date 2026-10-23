@@ -3,6 +3,7 @@ import { PilgrimProfile } from '../../types/game';
 import { DEFAULT_CHARACTER_AVATARS } from '../../data/canonicalCards';
 import { savePilgrimProfile } from '../../utils/cookie';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../utils/i18n';
 import { 
   User, 
   Upload, 
@@ -28,6 +29,8 @@ export const PilgrimProfileEditor: React.FC<PilgrimProfileEditorProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useLanguage();
+
   const [playerName, setPlayerName] = useState(initialProfile.playerName || 'Aninag Bayani');
   const [characterName, setCharacterName] = useState(initialProfile.characterName || 'Babaylan Tala');
   const [avatarUrl, setAvatarUrl] = useState(initialProfile.avatarUrl || DEFAULT_CHARACTER_AVATARS[0].url);
@@ -100,11 +103,11 @@ export const PilgrimProfileEditor: React.FC<PilgrimProfileEditorProps> = ({
             </div>
             <div>
               <h2 className="font-cinzel text-lg font-bold text-amber-100 flex items-center gap-2">
-                <span>Profile ng Manlalakbay</span>
+                <span>{t.profileTitle}</span>
                 <Sparkles className="w-4 h-4 text-amber-400" />
               </h2>
               <p className="text-xs text-amber-300/70 font-serif italic">
-                I-ukit ang iyong pagkakakilanlan sa aklat ng Athanasia (Naka-save sa Cookies)
+                {t.profileSaved}
               </p>
             </div>
           </div>
@@ -335,7 +338,7 @@ export const PilgrimProfileEditor: React.FC<PilgrimProfileEditorProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-cinzel text-xs cursor-pointer transition-colors"
             >
-              Kanselahin
+              {t.cancel}
             </button>
             <button
               type="submit"
@@ -350,7 +353,7 @@ export const PilgrimProfileEditor: React.FC<PilgrimProfileEditorProps> = ({
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>I-SAVE ANG PROFILE</span>
+                  <span>{t.saveProfile.toUpperCase()}</span>
                 </>
               )}
             </button>

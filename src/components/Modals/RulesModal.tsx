@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { BookOpen, X, Sparkles, Shield, Skull, Compass, Flame, Droplets, Wind, Mountain, Crown } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../utils/i18n';
 
 interface RulesModalProps {
   onClose: () => void;
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'story' | 'realms' | 'cards' | 'rules'>('story');
 
   return (
@@ -40,34 +42,34 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
           <button
             onClick={() => setActiveTab('story')}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'story' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              activeTab === 'story' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Kwento & Mitolohiya
+            {t.rulesTabStory}
           </button>
           <button
             onClick={() => setActiveTab('realms')}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'realms' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              activeTab === 'realms' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
-            4 na Lupain (Realms)
+            {t.rulesTabRealms}
           </button>
           <button
             onClick={() => setActiveTab('cards')}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'cards' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              activeTab === 'cards' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Mga Baraha (Decks)
+            {t.rulesTabCards}
           </button>
           <button
             onClick={() => setActiveTab('rules')}
             className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'rules' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              activeTab === 'rules' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Alituntunin & Tagumpay
+            {t.rulesTabMechanics}
           </button>
         </div>
 
@@ -138,63 +140,71 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
 
           {activeTab === 'cards' && (
             <div className="space-y-2.5">
-              <div>
-                <strong className="text-amber-300 font-cinzel">1. Role Card & Guess the Impostor:</strong>
-                <p className="text-[11px] text-slate-300">Lihim na itinatalaga kung ikaw ay Ordinaryong Aninag o Impostor. Mayroon kang 1 Accusation card sa buong laro upang hulaan ang taksil.</p>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="font-bold text-amber-300 text-xs">Sumpa Card (Lihim na Kapansanan)</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Ibinubulong sa simula ng laro. Hindi nakakapagpabagal sa paggalaw, ngunit ito ang susi sa pagsagot sa Pahiwatig sa Tarangkahan ng Diwaling.
+                </p>
               </div>
-              <div>
-                <strong className="text-amber-300 font-cinzel">2. Sumpa Cards (6 Curses):</strong>
-                <p className="text-[11px] text-slate-300">Tikbalang, Manananggal, Bakunawa, Kapre, Nuno sa Punso, at Tiyanak. Binabasa nang malakas ang pahiwatig sa simula at nagsisilbing susi sa Pintuan ng Diwaling.</p>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="font-bold text-amber-300 text-xs">Pahiwatig Card (Mga Tanong ng Diwaling)</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Lilitaw kapag nakarating sa Pintuan. Kailangang ituro ng grupo kung sino ang nagtataglay ng kaukulang Sumpa upang mabuksan ang tarangkahan.
+                </p>
               </div>
-              <div>
-                <strong className="text-amber-300 font-cinzel">3. Pahiwatig Cards (18 Gate Riddles):</strong>
-                <p className="text-[11px] text-slate-300">Kinakaharap sa Pintuan ng Diwaling. Nagtatanong kung sino ang may hawak ng partikular na sumpa. Kapag nahulaan ng grupo, bubukas ang tarangkahan.</p>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="font-bold text-amber-300 text-xs">Pagsubok Card (Bugtong at Karunungan)</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Matatagpuan sa mga Pagsubok tiles. Sagutin ang tradisyunal na bugtong o logic puzzle upang magkamit ng Biyaya card.
+                </p>
               </div>
-              <div>
-                <strong className="text-amber-300 font-cinzel">4. Pagsubok Cards (60 Challenges):</strong>
-                <p className="text-[11px] text-slate-300">Riddles (Bugtong), Pambansang Sagisag trivia, Kasabihan, 5-segundong bilisan, Tongue twisters, at Sawikain. Ang tamang sagot ay nagbibigay ng Biyaya card.</p>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="font-bold text-amber-300 text-xs">Kapalaran Card (Tadhana at Pagsusugal)</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Pumili sa pagitan ng ligtas na handog o mapangahas na pag-abante na may kapalit na panganib.
+                </p>
               </div>
-              <div>
-                <strong className="text-amber-300 font-cinzel">5. Biyaya Cards (30 Action Cards):</strong>
-                <p className="text-[11px] text-slate-300">Uno-style utility cards tulad ng Abante (sulung), Baliktad (urong), Harang (skip), Kalasag (shield laban sa negatibong epekto), at Palit-Pwesto sa parehong lupain.</p>
-              </div>
-              <div>
-                <strong className="text-amber-300 font-cinzel">6. Kapalaran Cards (30 Dilemma Cards):</strong>
-                <p className="text-[11px] text-slate-300">Choice A vs Choice B na nagbibigay ng gantimpala o mga hamon sa paglalakbay.</p>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="font-bold text-amber-300 text-xs">Biyaya Card (Uno-Style Action Cards)</div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Mga agimat tulad ng Harang (Skip), Baliktad (Reverse 2), Abante (+2 moves), at Kalasag (Shield).
+                </p>
               </div>
             </div>
           )}
 
           {activeTab === 'rules' && (
-            <div className="space-y-3">
-              <div>
-                <h4 className="font-bold text-amber-300 font-cinzel">Pagkakasunod ng Tira (Turn Sequence):</h4>
-                <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-300 mt-1">
-                  <li><strong>Roll:</strong> Pagulungin ang dice at lumipat sa kaukulang tile.</li>
-                  <li><strong>Tile Event:</strong> Harapin ang Diwaling Gate, Pagsubok, o Kapalaran ayon sa napuntahang espasyo.</li>
-                  <li><strong>Action:</strong> Maglaro ng Biyaya cards mula sa iyong kamay o magsagawa ng Impostor Accusation kung may hinala.</li>
-                  <li><strong>End:</strong> Ipasa ang tira sa susunod na manlalaro.</li>
-                </ol>
+            <div className="space-y-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="font-bold text-amber-300">Kilos at Pag-abante (Movement)</div>
+                <p className="text-[11px] text-slate-400">
+                  Pagulungin ang 6-sided movement die. Bawat manlalaro ay kailangang huminto sa saradong Tarangkahan ng Diwaling hanggang ito ay mabuksan ng grupo.
+                </p>
               </div>
-
-              <div>
-                <h4 className="font-bold text-amber-300 font-cinzel">Kondisyon ng Tagumpay:</h4>
-                <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300 mt-1">
-                  <li><strong>Tagumpay ng Aninag:</strong> Maabot ang Tile 50 (Aetherya), buksan ang mga tarangkahan, o maalis ang Impostor gamit ang tamang Accusation.</li>
-                  <li><strong>Tagumpay ng Impostor:</strong> Mapigilan ang mga Aninag na maabot ang dambana o makarating sa Aetherya nang hindi nabubunyag ang lihim.</li>
-                </ul>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="font-bold text-amber-300">Pag-akusa sa Impostor (Guess the Impostor)</div>
+                <p className="text-[11px] text-slate-400">
+                  Maaari mong gamitin ang iyong Accusation card isang beses sa iyong tira. Kung tama ang hinala, agad kang aabante sa Aetherya! Ngunit kung mali, babalik ka sa simula at mawawalan ng 1 tira.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="font-bold text-amber-300">Kondisyon ng Tagumpay (Victory Conditions)</div>
+                <p className="text-[11px] text-slate-400">
+                  <strong>Tagumpay ng Aninag:</strong> Makarating sa Aetherya o matagumpay na ibunyag ang Impostor.<br />
+                  <strong>Tagumpay ng Impostor:</strong> Sabotahin ang mga pagsubok at pigilan ang mga Aninag sa pagpapanumbalik ng Diwa.
+                </p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-800 pt-3 flex justify-end">
+        <div className="border-t border-slate-800 pt-3 flex items-center justify-end">
           <button
             onClick={() => { sounds.playClick(); onClose(); }}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-cinzel text-xs font-bold transition-colors cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer"
           >
-            Naiintindihan Ko Na
+            {t.close}
           </button>
         </div>
       </div>

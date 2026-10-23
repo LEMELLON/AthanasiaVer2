@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GameRoom, PlayerState, ChatMessage } from '../../types/game';
-import { Send, MessageSquare, Users, Sparkles, Smile, Shield } from 'lucide-react';
+import { GameRoom, PlayerState } from '../../types/game';
+import { Send, MessageSquare, Users, Shield } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../utils/i18n';
 
 interface GameChatProps {
   room: GameRoom;
@@ -14,20 +15,18 @@ export const GameChat: React.FC<GameChatProps> = ({
   currentPlayer,
   onSendChat,
 }) => {
+  const { t } = useLanguage();
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'chat' | 'players'>('chat');
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const quickReactions = [
-    'Tabi-tabi po! 🌿',
-    'Sino ang Impostor? 👀',
-    'Ingat sa Sumpa! ⚠️',
-    'Sulong sa Aetherya! 🏆',
-    'Laban lang, Aninag! ✨',
-  ];
+  
+  // Scoped internal scroll container ref to prevent browser window-level auto-scrolling
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Confine scroll strictly to internal chat element, never dragging parent window viewport
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [room.chatMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,7 +56,7 @@ export const GameChat: React.FC<GameChatProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Usapan & Tala</span>
+            <span>{t.chatTab}</span>
           </button>
           <button
             onClick={() => setActiveTab('players')}
@@ -68,7 +67,7 @@ export const GameChat: React.FC<GameChatProps> = ({
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Manlalakbay ({room.players.length})</span>
+            <span>{t.pilgrimsTab} ({room.players.length})</span>
           </button>
         </div>
       </div>
@@ -76,8 +75,8 @@ export const GameChat: React.FC<GameChatProps> = ({
       {/* Tab Content */}
       {activeTab === 'chat' ? (
         <div className="flex-1 flex flex-col justify-between overflow-hidden">
-          {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+          {/* Messages Feed with Scoped Scroll Container */}
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
             {room.chatMessages.map((msg) => {
               const isMe = msg.sender === currentPlayer.name;
               const isSystem = msg.type === 'system';
@@ -131,12 +130,11 @@ export const GameChat: React.FC<GameChatProps> = ({
                 </div>
               );
             })}
-            <div ref={chatEndRef} />
           </div>
 
           {/* Quick Reaction Pills */}
           <div className="px-2 py-1 flex items-center gap-1 overflow-x-auto border-t border-slate-800 bg-slate-950/40 shrink-0">
-            {quickReactions.map((qText, idx) => (
+            {t.quickReactions.map((qText, idx) => (
               <button
                 key={idx}
                 onClick={() => handleQuickReaction(qText)}
@@ -153,7 +151,7 @@ export const GameChat: React.FC<GameChatProps> = ({
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Magpadala ng mensahe..."
+              placeholder={t.chatPlaceholder}
               maxLength={150}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
@@ -168,7 +166,7 @@ export const GameChat: React.FC<GameChatProps> = ({
       ) : (
         /* Players List Tab */
         <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
-          {room.players.map((p, idx) => {
+          {room.players.map((p) => {
             const isTurn = room.players[room.currentTurnIndex]?.id === p.id;
             return (
               <div

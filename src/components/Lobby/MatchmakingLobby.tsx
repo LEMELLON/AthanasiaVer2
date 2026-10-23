@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameRoom, PilgrimProfile, PlayerState } from '../../types/game';
-import { DEFAULT_CHARACTER_AVATARS } from '../../data/canonicalCards';
+import { GameRoom, PilgrimProfile } from '../../types/game';
 import { loadPilgrimProfile } from '../../utils/cookie';
 import { 
   Play, 
@@ -21,6 +20,7 @@ import {
   Edit3
 } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../utils/i18n';
 
 interface MatchmakingLobbyProps {
   onJoinRoom: (roomCode: string, playerName: string, avatarUrl: string) => void;
@@ -46,6 +46,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
   onOpenProfile,
   onOpenMapEditor,
 }) => {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<PilgrimProfile>(() => loadPilgrimProfile());
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [customRoomName, setCustomRoomName] = useState('Dambana ng Diwa');
@@ -164,7 +165,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-serif italic mt-0.5">
-                Naka-save sa Cookies ang iyong pagkakakilanlan
+                {t.profileSaved}
               </p>
             </div>
           </div>
@@ -175,15 +176,15 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-cinzel font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
             >
               <User className="w-3.5 h-3.5" />
-              <span>I-edit Profile</span>
+              <span>{t.profile}</span>
             </button>
             <button
               onClick={onOpenMapEditor}
               className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-cinzel font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-              title="Buksan ang Tile Map Editor"
+              title={t.mapEditor}
             >
               <Compass className="w-3.5 h-3.5 text-amber-400" />
-              <span>Map Editor</span>
+              <span>{t.mapEditor}</span>
             </button>
           </div>
         </div>
@@ -204,7 +205,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               activeTab === 'create' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Lumikha ng Silid
+            {t.createRoom}
           </button>
           <button
             onClick={() => { sounds.playClick(); setActiveTab('join'); }}
@@ -212,7 +213,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               activeTab === 'join' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Sumali sa Silid
+            {t.joinRoom}
           </button>
         </div>
 
@@ -222,10 +223,10 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
             <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-amber-900/30 text-xs text-slate-300 space-y-1.5">
               <div className="font-bold text-amber-300 font-cinzel flex items-center gap-1.5">
                 <Bot className="w-4 h-4 text-amber-400" />
-                <span>Mabilisang Laro kasama ang 3 AI Bots</span>
+                <span>Solo Pilgrimage with 3 AI Companions</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Magsimula agad ng buong match gamit ang Canonical Diwa Sanctuary 50-tile map. Awtomatikong pupunuan ng matatalinong AI bot ang mga bakanteng pwesto!
+                Immediately embark on a full pilgrimage match using the 50-space Diwa Sanctuary serpentine board with automated AI companions!
               </p>
             </div>
 
@@ -234,7 +235,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               className="w-full py-3 rounded-2xl font-cinzel text-xs font-black tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 hover:brightness-110 shadow-xl shadow-amber-900/40 flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>MAGSIMULA AGAD (SOLO / AI BOTS)</span>
+              <span>EMBARK (SOLO / AI BOTS)</span>
             </button>
           </div>
         )}
@@ -243,7 +244,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
         {activeTab === 'create' && (
           <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3 py-1 text-xs">
             <div>
-              <label className="text-[11px] text-slate-400 font-medium">Pangalan ng Silid (Room Name):</label>
+              <label className="text-[11px] text-slate-400 font-medium">{t.roomName}:</label>
               <input
                 type="text"
                 value={customRoomName}
@@ -258,7 +259,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-cinzel font-bold text-amber-300 flex items-center gap-1.5">
                   <MapIcon className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Pumili ng Mapa (Board Map):</span>
+                  <span>{t.selectMap}:</span>
                 </label>
                 <button
                   type="button"
@@ -266,7 +267,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                   className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
-                  <span>Gumawa sa Map Editor</span>
+                  <span>{t.mapEditor}</span>
                 </button>
               </div>
 
@@ -287,13 +288,13 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                         {m.name}
                       </div>
                       <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                        {m.description || 'Custom Philippine mythology map'}
+                        {m.description || 'Philippine mythology map layout'}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-[9px] text-slate-500 mt-1.5">
                       <span>{m.totalTiles || 50} Tiles</span>
                       <span>·</span>
-                      <span>{m.gatesCount || 4} Tarangkahan</span>
+                      <span>{m.gatesCount || 4} Gates</span>
                     </div>
                   </button>
                 ))}
@@ -302,17 +303,17 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-slate-400 font-medium">Kabuuan ng Manlalaro (2-6):</label>
+                <label className="text-[11px] text-slate-400 font-medium">{t.maxPlayers}:</label>
                 <select
                   value={maxPlayers}
                   onChange={(e) => setMaxPlayers(Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 mt-1 outline-none"
                 >
-                  <option value={2}>2 Manlalaro</option>
-                  <option value={3}>3 Manlalaro</option>
-                  <option value={4}>4 Manlalaro (Recommended)</option>
-                  <option value={5}>5 Manlalaro</option>
-                  <option value={6}>6 Manlalaro (Max)</option>
+                  <option value={2}>2 Pilgrims</option>
+                  <option value={3}>3 Pilgrims</option>
+                  <option value={4}>4 Pilgrims (Recommended)</option>
+                  <option value={5}>5 Pilgrims</option>
+                  <option value={6}>6 Pilgrims (Max)</option>
                 </select>
               </div>
 
@@ -324,7 +325,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                     onChange={(e) => setFillWithBots(e.target.checked)}
                     className="rounded text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-[11px]">Punuan ng AI Bots</span>
+                  <span className="text-[11px]">{t.fillWithBots}</span>
                 </label>
               </div>
             </div>
@@ -334,7 +335,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
               className="mt-1 w-full py-3 rounded-2xl font-cinzel text-xs font-black tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 hover:brightness-110 shadow-xl shadow-amber-900/40 flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>BUKSAN ANG BAGONG SILID</span>
+              <span>{t.createButton}</span>
             </button>
           </form>
         )}
@@ -348,7 +349,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                 type="text"
                 value={joinCodeInput}
                 onChange={(e) => setJoinCodeInput(e.target.value)}
-                placeholder="Ipasok ang 5-titik na Room Code (hal. ABC12)"
+                placeholder={t.enterRoomCode}
                 maxLength={6}
                 className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 uppercase font-mono tracking-wider outline-none focus:border-amber-500"
               />
@@ -361,26 +362,26 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                Sumali
+                {t.joinButton}
               </button>
             </form>
 
             {/* Public Rooms List */}
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 mt-1">
-              <span>Mga Bukas na Silid ({publicRooms.length}):</span>
+              <span>{t.publicSanctuaries} ({publicRooms.length}):</span>
               <button
                 onClick={() => { sounds.playClick(); fetchRooms(); }}
                 className="hover:text-amber-300 flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${loadingRooms ? 'animate-spin' : ''}`} />
-                <span>I-refresh</span>
+                <span>{t.refreshList}</span>
               </button>
             </div>
 
             <div className="max-h-40 overflow-y-auto flex flex-col gap-1.5 pr-1">
               {publicRooms.length === 0 ? (
                 <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800 text-center text-slate-500 text-xs">
-                  Walang bukas na silid sa kasalukuyan. Lumikha ng bago upang magsimula!
+                  {t.noRoomsFound}
                 </div>
               ) : (
                 publicRooms.map((r) => (
@@ -396,10 +397,10 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                         </span>
                       </div>
                       <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                        <span>{r.playerCount} / {r.maxPlayers} Manlalaro</span>
+                        <span>{r.playerCount} / {r.maxPlayers} {t.pilgrimsTab}</span>
                         <span>·</span>
                         <span className={r.status === 'lobby' ? 'text-emerald-400' : 'text-amber-400'}>
-                          {r.status === 'lobby' ? 'Naghahanda sa Lobby' : 'Kasalukuyang Naglalaro'}
+                          {r.status === 'lobby' ? 'Waiting in Lobby' : 'Match in Progress'}
                         </span>
                       </div>
                     </div>
@@ -413,7 +414,7 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
                           : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                       }`}
                     >
-                      {r.status === 'lobby' ? 'Sumali' : 'Naglalaro'}
+                      {r.status === 'lobby' ? t.joinButton : 'Playing'}
                     </button>
                   </div>
                 ))
@@ -427,17 +428,17 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
       <div className="relative z-10 flex items-center gap-4 mt-6 text-xs text-slate-400 font-medium">
         <button onClick={onOpenRules} className="hover:text-amber-300 flex items-center gap-1.5 cursor-pointer">
           <BookOpen className="w-4 h-4 text-amber-500" />
-          <span>Alituntunin ng Laro</span>
+          <span>{t.rules}</span>
         </button>
         <span>·</span>
         <button onClick={onOpenMapEditor} className="hover:text-amber-300 flex items-center gap-1.5 cursor-pointer">
           <Compass className="w-4 h-4 text-amber-500" />
-          <span>Tile Map Editor</span>
+          <span>{t.mapEditor}</span>
         </button>
         <span>·</span>
         <button onClick={onOpenAdmin} className="hover:text-amber-300 flex items-center gap-1.5 cursor-pointer">
           <Settings className="w-4 h-4 text-amber-500" />
-          <span>Admin Suite</span>
+          <span>{t.admin}</span>
         </button>
       </div>
     </div>

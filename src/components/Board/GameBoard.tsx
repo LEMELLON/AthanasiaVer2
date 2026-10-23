@@ -5,6 +5,7 @@ import { CANONICAL_MAP_DATA } from '../../data/canonicalMap';
 import { TileMapRenderer } from './TileMapRenderer';
 import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Sparkles, Flame, Droplets, Wind, Mountain, Eye, Map, LayoutGrid } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import { useLanguage } from '../../utils/i18n';
 
 interface GameBoardProps {
   room: GameRoom;
@@ -17,6 +18,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   currentPlayer,
   onTileClick,
 }) => {
+  const { t } = useLanguage();
   const [selectedTile, setSelectedTile] = useState<BoardTile | null>(null);
   const [viewMode, setViewMode] = useState<'tile_map' | 'simple_track'>(() => {
     return (localStorage.getItem('athanasia_board_view_mode') as 'tile_map' | 'simple_track') || 'tile_map';
@@ -133,7 +135,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }`}
           >
             <Map className="w-3.5 h-3.5" />
-            <span>Mahiwagang Tile Map</span>
+            <span>{t.tileMapView}</span>
           </button>
           <button
             onClick={() => handleToggleView('simple_track')}
@@ -144,7 +146,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Payak na Track</span>
+            <span>{t.trackView}</span>
           </button>
         </div>
       </div>
@@ -169,130 +171,124 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               return rowIdx % 2 === 0 ? a.gridX - b.gridX : b.gridX - a.gridX;
             });
 
-          return (
-            <div key={rowIdx} className="flex items-center justify-start gap-2 mb-3 relative">
-              {/* Row Realm Label */}
-              <div className="w-20 shrink-0 text-left pl-1">
-                <span className="font-cinzel text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {rowIdx === 0 && 'Lupa'}
-                  {rowIdx === 1 && 'Apoy'}
-                  {rowIdx === 2 && 'Tubig'}
-                  {rowIdx === 3 && 'Hangin'}
-                  {rowIdx === 4 && 'Aetherya'}
-                </span>
-              </div>
+            return (
+              <div key={rowIdx} className="flex items-center justify-start gap-2 mb-3 relative">
+                {/* Row Realm Label */}
+                <div className="w-20 shrink-0 text-left pl-1">
+                  <span className="font-cinzel text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                    {rowIdx === 0 && 'Lupa'}
+                    {rowIdx === 1 && 'Apoy'}
+                    {rowIdx === 2 && 'Tubig'}
+                    {rowIdx === 3 && 'Hangin'}
+                    {rowIdx === 4 && 'Aetherya'}
+                  </span>
+                </div>
 
-              {/* Tiles in this row */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {rowTiles.map((tile) => {
-                  const meta = realmColors[tile.realm];
-                  const playersOnTile = room.players.filter(p => p.currentTile === tile.index && !p.isEliminated);
-                  const isCurrentTurnPlayerHere = room.players[room.currentTurnIndex]?.currentTile === tile.index;
-                  const isUserHere = currentPlayer?.currentTile === tile.index;
-                  const isSelected = selectedTile?.index === tile.index;
+                {/* Tiles in this row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {rowTiles.map((tile) => {
+                    const meta = realmColors[tile.realm];
+                    const playersOnTile = room.players.filter(p => p.currentTile === tile.index && !p.isEliminated);
+                    const isCurrentTurnPlayerHere = room.players[room.currentTurnIndex]?.currentTile === tile.index;
+                    const isUserHere = currentPlayer?.currentTile === tile.index;
+                    const isSelected = selectedTile?.index === tile.index;
 
-                  return (
-                    <button
-                      key={tile.index}
-                      onClick={() => handleTileSelect(tile)}
-                      className={`relative group transition-all duration-300 rounded-xl flex flex-col items-center justify-between p-1.5 cursor-pointer ${
-                        tile.type === 'aetherya'
-                          ? 'w-24 h-24 border-2 border-yellow-400 shadow-xl shadow-yellow-500/20 bg-gradient-to-b from-yellow-950 via-slate-900 to-amber-950 animate-pulse-glow'
-                          : tile.type === 'pintuan'
-                          ? 'w-14 h-16 border-2 shadow-lg ' + meta.border + ' ' + meta.bg
-                          : 'w-12 h-14 border border-slate-700/60 hover:border-slate-400 bg-slate-900/90 ' + meta.glow
-                      } ${isSelected ? 'ring-2 ring-amber-400 scale-105 z-20' : ''}`}
-                    >
-                      {/* Tile Header: Number */}
-                      <div className="w-full flex items-center justify-between px-0.5">
-                        <span className="font-mono text-[10px] text-slate-400 font-bold">
-                          {tile.index === 0 ? 'START' : `#${tile.index}`}
-                        </span>
-                        {tile.type === 'pintuan' && (
-                          <span className="text-[9px] font-bold uppercase text-amber-300 font-cinzel">GATE</span>
-                        )}
-                      </div>
-
-                      {/* Tile Center Icon */}
-                      <div className="my-auto flex items-center justify-center">
-                        {getTileIcon(tile)}
-                      </div>
-
-                      {/* Tile Label */}
-                      <div className="text-[9px] truncate w-full text-center text-slate-300 font-medium">
-                        {tile.type === 'aetherya' ? 'WAKAS' : tile.type === 'pintuan' ? tile.guardianName?.split(' ')[0] : tile.type.toUpperCase()}
-                      </div>
-
-                      {/* Players on this Tile */}
-                      {playersOnTile.length > 0 && (
-                        <div className="absolute -top-3 -right-2 flex -space-x-2 z-30">
-                          {playersOnTile.map((p) => {
-                            const isPturn = room.players[room.currentTurnIndex]?.id === p.id;
-                            return (
-                              <div
-                                key={p.id}
-                                className={`relative rounded-full transition-transform ${isPturn ? 'scale-125 animate-token-hop z-30' : ''}`}
-                                title={`${p.name} (${p.role === 'impostor' && p.id === currentPlayer?.id ? 'IMPOSTOR' : 'Aninag'})`}
-                              >
-                                <img
-                                  src={p.avatar}
-                                  alt={p.name}
-                                  className={`w-6 h-6 rounded-full object-cover border-2 ${
-                                    isPturn 
-                                      ? 'border-amber-400 shadow-md shadow-amber-500/80' 
-                                      : 'border-slate-800'
-                                  }`}
-                                />
-                                {p.hasShield && (
-                                  <Shield className="w-3 h-3 text-cyan-400 absolute -bottom-1 -right-1 drop-shadow" />
-                                )}
-                              </div>
-                            );
-                          })}
+                    return (
+                      <button
+                        key={tile.index}
+                        onClick={() => handleTileSelect(tile)}
+                        className={`relative group transition-all duration-300 rounded-xl flex flex-col items-center justify-between p-1.5 cursor-pointer ${
+                          tile.type === 'aetherya'
+                            ? 'w-24 h-24 border-2 border-yellow-400 shadow-xl shadow-yellow-500/20 bg-gradient-to-b from-yellow-950 via-slate-900 to-amber-950 animate-pulse-glow'
+                            : tile.type === 'pintuan'
+                            ? `w-16 h-18 border-2 ${meta.border} ${meta.bg} shadow-lg ${meta.glow}`
+                            : `w-14 h-16 border ${meta.border} bg-slate-900/90 hover:bg-slate-800`
+                        } ${isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''}`}
+                      >
+                        {/* Tile Number Header */}
+                        <div className="w-full flex items-center justify-between text-[10px] font-mono px-0.5">
+                          <span className="text-slate-400">#{tile.index}</span>
+                          {tile.type === 'pintuan' && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">GATE</span>
+                          )}
                         </div>
-                      )}
 
-                      {/* Active Player Glow Ring */}
-                      {(isCurrentTurnPlayerHere || isUserHere) && (
-                        <div className="absolute inset-0 rounded-xl border-2 border-amber-400/80 animate-ping pointer-events-none" />
-                      )}
-                    </button>
-                  );
-                })}
+                        {/* Tile Center Icon */}
+                        <div className="my-auto">{getTileIcon(tile)}</div>
+
+                        {/* Tile Footer Title */}
+                        <div className="w-full text-center">
+                          <span className="text-[9px] font-semibold truncate block max-w-full text-slate-300">
+                            {tile.type === 'pintuan' ? 'Tarangkahan' : tile.type === 'pagsubok' ? 'Hamon' : tile.type === 'kapalaran' ? 'Tadhana' : 'Daan'}
+                          </span>
+                        </div>
+
+                        {/* Player Avatars on this tile */}
+                        {playersOnTile.length > 0 && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center -space-x-1.5 z-10">
+                            {playersOnTile.map((p) => {
+                              const isPturn = room.players[room.currentTurnIndex]?.id === p.id;
+                              return (
+                                <div
+                                  key={p.id}
+                                  className={`relative rounded-full transition-transform ${isPturn ? 'animate-token-hop scale-110' : ''}`}
+                                  title={`${p.name} (Tile #${p.currentTile})`}
+                                >
+                                  <img
+                                    src={p.avatar}
+                                    alt={p.name}
+                                    className={`w-6 h-6 rounded-full object-cover border-2 shadow-md ${
+                                      isPturn ? 'border-amber-400 ring-1 ring-amber-300' : 'border-slate-300'
+                                    }`}
+                                  />
+                                  {p.hasShield && (
+                                    <Shield className="w-2.5 h-2.5 text-cyan-400 absolute -bottom-0.5 -right-0.5" />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
       )}
 
-      {/* Tile Inspection Card Modal */}
+      {/* Selected Tile Inspector Drawer */}
       {selectedTile && (
-        <div className="mt-3 p-3 rounded-2xl bg-slate-900/95 border border-amber-500/30 flex items-center justify-between gap-4 max-w-xl mx-auto backdrop-blur-md shadow-2xl">
+        <div className="mt-3 p-3 rounded-2xl bg-slate-900/90 border border-amber-600/40 backdrop-blur-md flex items-center justify-between text-xs gap-4 animate-fade-in">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-300">
+            <div className="p-2 rounded-xl bg-amber-950/60 border border-amber-500/40">
               {getTileIcon(selectedTile)}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-cinzel text-sm font-bold text-amber-200">{selectedTile.title}</span>
-                <span className="text-[11px] font-mono text-slate-400 font-bold">Tile #{selectedTile.index}</span>
+              <div className="font-bold text-amber-200 flex items-center gap-2">
+                <span>{selectedTile.title}</span>
+                <span className="font-mono text-[10px] text-slate-400">Tile #{selectedTile.index}</span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                {selectedTile.description || `Lupain ng ${realmColors[selectedTile.realm].name}. Uri: ${selectedTile.type.toUpperCase()}`}
-              </p>
-              {selectedTile.guardianName && (
-                <div className="text-[11px] text-amber-400 font-semibold mt-0.5">
-                  🛡️ Bantay na Diwaling: {selectedTile.guardianName}
-                </div>
-              )}
+              <div className="text-slate-400 text-[11px]">
+                {selectedTile.description || (
+                  selectedTile.type === 'pintuan'
+                    ? `Pintuan ng ${selectedTile.realm.toUpperCase()}. Kailangang sagutin ang Pahiwatig upang mabuksan.`
+                    : selectedTile.type === 'pagsubok'
+                    ? 'Magbubunot ng Pagsubok Card (Bugtong o Logic). Tagumpay ay nagbibigay ng Biyaya.'
+                    : selectedTile.type === 'kapalaran'
+                    ? 'Sangandaan ng Kapalaran. Pagpipilian sa pagitan ng panganib at gantimpala.'
+                    : 'Karaniwang daanan ng paglalakbay.'
+                )}
+              </div>
             </div>
           </div>
           <button
             onClick={() => setSelectedTile(null)}
-            className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer"
+            className="text-slate-400 hover:text-slate-200 text-xs px-2 py-1 rounded-lg bg-slate-800"
           >
-            Isara
+            {t.close}
           </button>
         </div>
       )}
