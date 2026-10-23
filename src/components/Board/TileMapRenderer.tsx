@@ -1,6 +1,7 @@
 import React from 'react';
 import { BoardTile, GameRoom, PlayerState, RealmType, TileMapData } from '../../types/game';
 import { CANONICAL_MAP_DATA } from '../../data/canonicalMap';
+import { cellPts, hexPts } from '../../utils/aetheryaLattice';
 import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Sparkles, Flame, Droplets, Wind, Mountain } from 'lucide-react';
 import { sounds } from '../../utils/audio';
 
@@ -67,8 +68,8 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
     },
   };
 
-  // Helper to generate triangle SVG polygon points
-  const getTrianglePoints = (cx: number, cy: number, orientation: 'up' | 'down' = 'up', size = 24 * sizeMult): string => {
+  // Fallback triangle points generator if grid coordinates are not on lattice
+  const getTrianglePoints = (cx: number, cy: number, orientation: 'up' | 'down' = 'up', size = 26 * sizeMult): string => {
     const h = size * 1.15;
     const w = size * 1.15;
     if (orientation === 'up') {
@@ -78,8 +79,8 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
     }
   };
 
-  // Helper to generate regular hexagon SVG polygon points for gates & sanctuary
-  const getHexagonPoints = (cx: number, cy: number, r = 30 * sizeMult): string => {
+  // Helper to generate regular hexagon SVG polygon points
+  const getHexagonPoints = (cx: number, cy: number, r = 32 * sizeMult): string => {
     const points: string[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i - Math.PI / 6;
@@ -88,7 +89,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
     return points.join(' ');
   };
 
-  // Build sequential path line connecting each tile (0 -> 1 -> ... -> max)
+  // Build sequential energy trail connecting sorted tiles
   const sortedTiles = [...tiles].sort((a, b) => a.index - b.index);
   const pathD = sortedTiles.reduce((acc, t, idx) => {
     const x = t.posX ?? 100;
@@ -104,17 +105,65 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
         style={{ filter: 'contrast(1.05)' }}
       >
         <defs>
-          {/* Radial Glows */}
-          <radialGradient id="aetheryaSun" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fef08a" stopOpacity="0.9" />
-            <stop offset="60%" stopColor="#eab308" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#78350f" stopOpacity="0.1" />
+          {/* Radial Realm Glows matching AetheryaMapCanvas */}
+          <radialGradient id="renderTalvarisGlow" cx="20%" cy="15%" r="65%">
+            <stop offset="0%" stopColor="#059669" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#022c22" stopOpacity="0.02" />
           </radialGradient>
-          <radialGradient id="gateGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#0f172a" stopOpacity="0.2" />
+          <radialGradient id="renderAlabaryaGlow" cx="80%" cy="40%" r="65%">
+            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.20" />
+            <stop offset="100%" stopColor="#450a0a" stopOpacity="0.02" />
           </radialGradient>
-          {/* Animated Dashed Glow Filter */}
+          <radialGradient id="renderAlonawonGlow" cx="20%" cy="65%" r="65%">
+            <stop offset="0%" stopColor="#0284c7" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#082f49" stopOpacity="0.02" />
+          </radialGradient>
+          <radialGradient id="renderHimarayaGlow" cx="80%" cy="90%" r="65%">
+            <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#2e1065" stopOpacity="0.02" />
+          </radialGradient>
+          <radialGradient id="renderAetheryaGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.32" />
+            <stop offset="60%" stopColor="#d97706" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#0b0f17" stopOpacity="0.0" />
+          </radialGradient>
+
+          {/* Daan Slate/Navy Gradient */}
+          <linearGradient id="renderDaanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#334155" />
+            <stop offset="50%" stopColor="#1e293b" />
+            <stop offset="100%" stopColor="#0f172a" />
+          </linearGradient>
+
+          {/* Pagsubok Amethyst Gradient */}
+          <linearGradient id="renderPagsubokGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7e22ce" />
+            <stop offset="50%" stopColor="#581c87" />
+            <stop offset="100%" stopColor="#3b0764" />
+          </linearGradient>
+
+          {/* Kapalaran Ruby Flame Gradient */}
+          <linearGradient id="renderKapalaranGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#b91c1c" />
+            <stop offset="50%" stopColor="#881337" />
+            <stop offset="100%" stopColor="#4c0519" />
+          </linearGradient>
+
+          {/* Gate Hexagon Gradient */}
+          <radialGradient id="renderGateGrad" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95" />
+            <stop offset="40%" stopColor="#eab308" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="#713f12" stopOpacity="0.85" />
+          </radialGradient>
+
+          {/* Finale Varyndor Hexagon Gradient */}
+          <radialGradient id="renderFinaleGrad" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="#fef9c3" stopOpacity="1" />
+            <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#78350f" stopOpacity="0.95" />
+          </radialGradient>
+
+          {/* Animated Glow Filter */}
           <filter id="tileGlow" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="3" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
@@ -122,36 +171,45 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
         </defs>
 
         {/* 1. Territory Backgrounds */}
-        {territories.map((terr) => (
-          <g key={terr.realm}>
-            <path
-              d={terr.path}
-              fill={terr.color}
-              stroke={realmTheme[terr.realm].border}
-              strokeWidth="1.5"
-              strokeDasharray="4,4"
-              opacity="0.55"
-            />
-            <text
-              x={terr.labelX}
-              y={terr.labelY}
-              fill={realmTheme[terr.realm].text}
-              fontSize={isLargeLattice ? "20" : "12"}
-              fontFamily="Cinzel, serif"
-              fontWeight="bold"
-              letterSpacing="2"
-              opacity="0.85"
-            >
-              {terr.name.toUpperCase()}
-            </text>
-          </g>
-        ))}
+        {territories.map((terr) => {
+          let fillUrl = terr.color;
+          if (terr.realm === 'talvaris') fillUrl = 'url(#renderTalvarisGlow)';
+          else if (terr.realm === 'alabarya') fillUrl = 'url(#renderAlabaryaGlow)';
+          else if (terr.realm === 'alonawon') fillUrl = 'url(#renderAlonawonGlow)';
+          else if (terr.realm === 'himaraya') fillUrl = 'url(#renderHimarayaGlow)';
+          else if (terr.realm === 'aetherya') fillUrl = 'url(#renderAetheryaGlow)';
 
-        {/* 2. Connecting Energy Trail */}
+          return (
+            <g key={terr.realm}>
+              <path
+                d={terr.path}
+                fill={fillUrl}
+                stroke={realmTheme[terr.realm].border}
+                strokeWidth="1.5"
+                strokeDasharray="6,4"
+                opacity="0.65"
+              />
+              <text
+                x={terr.labelX}
+                y={terr.labelY}
+                fill={realmTheme[terr.realm].text}
+                fontSize={isLargeLattice ? "22" : "13"}
+                fontFamily="Cinzel, serif"
+                fontWeight="bold"
+                letterSpacing="2"
+                opacity="0.85"
+              >
+                {terr.name.toUpperCase()}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* 2. Connecting Energy Trail (Serpentine Flow) */}
         <path
           d={pathD}
           fill="none"
-          stroke="rgba(245, 158, 11, 0.4)"
+          stroke="rgba(245, 158, 11, 0.55)"
           strokeWidth={isLargeLattice ? "4.5" : "3.5"}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -168,9 +226,29 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
           const isAetherya = tile.type === 'aetherya';
           const isGateUnlocked = isGate && room.diwalingGatesUnlocked[tile.realm];
 
+          // Use exact cell points if grid coordinates exist on lattice
+          const hasGridCoords = tile.gridY !== undefined && tile.gridX !== undefined && isLargeLattice;
+          const polygonPts = hasGridCoords 
+            ? cellPts(tile.gridY, tile.gridX) 
+            : getTrianglePoints(cx, cy, tile.orientation || 'up', 24 * sizeMult);
+
           // Players on this tile
           const playersHere = room.players.filter((p) => p.currentTile === tile.index && !p.isEliminated);
           const isCurrentTurnHere = room.players[room.currentTurnIndex]?.currentTile === tile.index;
+
+          let fill = 'url(#renderDaanGrad)';
+          let stroke = '#64748b';
+          let baybayinSigil = 'ᜇ'; // Baybayin 'Da' for Daan
+
+          if (tile.type === 'pagsubok') {
+            fill = 'url(#renderPagsubokGrad)';
+            stroke = '#a855f7';
+            baybayinSigil = 'ᜉ'; // Baybayin 'Pa' for Pagsubok
+          } else if (tile.type === 'kapalaran') {
+            fill = 'url(#renderKapalaranGrad)';
+            stroke = '#f43f5e';
+            baybayinSigil = 'ᜃ'; // Baybayin 'Ka' for Kapalaran
+          }
 
           return (
             <g
@@ -187,7 +265,7 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={(isAetherya ? 48 : isGate ? 38 : 32) * sizeMult}
+                  r={(isAetherya ? 52 : isGate ? 42 : 36) * (isLargeLattice ? 1.0 : sizeMult)}
                   fill="none"
                   stroke={isSelected ? '#fbbf24' : '#60a5fa'}
                   strokeWidth="2.5"
@@ -197,36 +275,36 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 />
               )}
 
-              {/* TILE SHAPE */}
+              {/* TILE SHAPES */}
               {isAetherya ? (
-                /* AETHERYA SANCTUARY (Large Glowing Sun Hexagon) */
+                /* AETHERYA SANCTUARY (Large Glowing Sun Hexagon matching Editor) */
                 <g>
                   <polygon
-                    points={getHexagonPoints(cx, cy, 42 * sizeMult)}
-                    fill="url(#aetheryaSun)"
+                    points={isLargeLattice ? hexPts(cx, cy, 48) : getHexagonPoints(cx, cy, 42 * sizeMult)}
+                    fill="url(#renderFinaleGrad)"
                     stroke="#eab308"
                     strokeWidth="3.5"
                     filter="url(#tileGlow)"
                   />
                   <polygon
-                    points={getHexagonPoints(cx, cy, 32 * sizeMult)}
+                    points={isLargeLattice ? hexPts(cx, cy, 36) : getHexagonPoints(cx, cy, 32 * sizeMult)}
                     fill="#451a03"
                     stroke="#fef08a"
                     strokeWidth="1.5"
                   />
                   <text
                     x={cx}
-                    y={cy - 3}
+                    y={cy - 4}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="#fef08a"
-                    fontSize={isLargeLattice ? "24" : "18"}
+                    fontSize={isLargeLattice ? "26" : "18"}
                   >
                     👑
                   </text>
                   <text
                     x={cx}
-                    y={cy + (isLargeLattice ? 24 : 18)}
+                    y={cy + (isLargeLattice ? 22 : 16)}
                     textAnchor="middle"
                     fill="#fde047"
                     fontSize={isLargeLattice ? "12" : "8"}
@@ -237,37 +315,37 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                   </text>
                 </g>
               ) : isGate ? (
-                /* DIWALING GATE (Double-Bordered Hexagon) */
+                /* DIWALING GATE (Double-Bordered Hexagon matching Editor) */
                 <g>
                   <polygon
-                    points={getHexagonPoints(cx, cy, 29 * sizeMult)}
-                    fill={isGateUnlocked ? '#064e3b' : '#1e1b4b'}
+                    points={isLargeLattice ? hexPts(cx, cy, 36) : getHexagonPoints(cx, cy, 29 * sizeMult)}
+                    fill={isGateUnlocked ? '#064e3b' : 'url(#renderGateGrad)'}
                     stroke={isGateUnlocked ? '#10b981' : '#f59e0b'}
-                    strokeWidth="2.5"
+                    strokeWidth="2.8"
                     filter="url(#tileGlow)"
                   />
                   <polygon
-                    points={getHexagonPoints(cx, cy, 23 * sizeMult)}
-                    fill={isGateUnlocked ? '#047857' : '#0f172a'}
-                    stroke={isGateUnlocked ? '#34d399' : '#d97706'}
-                    strokeWidth="1"
+                    points={isLargeLattice ? hexPts(cx, cy, 26) : getHexagonPoints(cx, cy, 21 * sizeMult)}
+                    fill={isGateUnlocked ? '#047857' : '#27170a'}
+                    stroke={isGateUnlocked ? '#34d399' : '#fbbf24'}
+                    strokeWidth="1.2"
                   />
                   <text
                     x={cx}
-                    y={cy}
+                    y={cy - 1}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill={isGateUnlocked ? '#6ee7b7' : '#fbbf24'}
-                    fontSize={isLargeLattice ? "16" : "12"}
+                    fontSize={isLargeLattice ? "18" : "12"}
                   >
                     {isGateUnlocked ? '🔓' : '🔒'}
                   </text>
                   <text
                     x={cx}
-                    y={cy + (isLargeLattice ? 22 : 16)}
+                    y={cy + (isLargeLattice ? 24 : 16)}
                     textAnchor="middle"
                     fill="#fcd34d"
-                    fontSize={isLargeLattice ? "10" : "7"}
+                    fontSize={isLargeLattice ? "11" : "7"}
                     fontFamily="Cinzel, serif"
                     fontWeight="bold"
                   >
@@ -275,40 +353,29 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                   </text>
                 </g>
               ) : (
-                /* TRIANGULAR TILES (Upright ▲ or Inverted ▼) */
+                /* TRIANGULAR TILES (Matching Editor Lattice Geometry and Sigils) */
                 <g>
                   <polygon
-                    points={getTrianglePoints(cx, cy, tile.orientation || 'up', 24 * sizeMult)}
-                    fill={
-                      tile.type === 'pagsubok'
-                        ? '#2e1065'
-                        : tile.type === 'kapalaran'
-                        ? '#450a0a'
-                        : '#0f172a'
-                    }
-                    stroke={
-                      tile.type === 'pagsubok'
-                        ? '#a855f7'
-                        : tile.type === 'kapalaran'
-                        ? '#ef4444'
-                        : theme.border
-                    }
-                    strokeWidth="2.2"
+                    points={polygonPts}
+                    fill={fill}
+                    stroke={isSelected ? '#fbbf24' : stroke}
+                    strokeWidth={isSelected ? "3.2" : "2.2"}
                     filter={isSelected ? 'url(#tileGlow)' : undefined}
                     opacity="0.95"
                   />
-                  {/* Inner Motif */}
+                  {/* Inner Motif Disc */}
                   <circle
                     cx={cx}
-                    cy={tile.orientation === 'down' ? cy - 2 : cy + 2}
-                    r={10 * sizeMult}
-                    fill="rgba(15, 23, 42, 0.7)"
-                    stroke="rgba(245, 158, 11, 0.3)"
-                    strokeWidth="0.8"
+                    cy={cy}
+                    r={isLargeLattice ? 14 : 10 * sizeMult}
+                    fill="rgba(0, 0, 0, 0.55)"
+                    stroke={stroke}
+                    strokeWidth="1"
                   />
+                  {/* Baybayin Emblem */}
                   <text
                     x={cx}
-                    y={tile.orientation === 'down' ? cy - 1 : cy + 3}
+                    y={cy + (isLargeLattice ? 4 : 3)}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill={
@@ -318,16 +385,10 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                         ? '#fecaca'
                         : '#cbd5e1'
                     }
-                    fontSize={isLargeLattice ? "13" : "9"}
+                    fontSize={isLargeLattice ? "14" : "10"}
                     fontWeight="bold"
                   >
-                    {tile.type === 'pagsubok'
-                      ? '?'
-                      : tile.type === 'kapalaran'
-                      ? '✦'
-                      : tile.index === 0
-                      ? 'S'
-                      : tile.index}
+                    {baybayinSigil}
                   </text>
                 </g>
               )}
@@ -335,10 +396,10 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
               {/* TILE INDEX BADGE */}
               <text
                 x={cx}
-                y={tile.orientation === 'down' ? cy + (isLargeLattice ? 30 : 21) : cy - (isLargeLattice ? 27 : 19)}
+                y={tile.orientation === 'down' ? cy + (isLargeLattice ? 28 : 20) : cy - (isLargeLattice ? 26 : 18)}
                 textAnchor="middle"
                 fill="#94a3b8"
-                fontSize={isLargeLattice ? "10" : "7"}
+                fontSize={isLargeLattice ? "11" : "8"}
                 fontFamily="monospace"
                 fontWeight="bold"
               >
@@ -350,30 +411,30 @@ export const TileMapRenderer: React.FC<TileMapRendererProps> = ({
                 <g transform={`translate(${cx}, ${cy})`}>
                   {playersHere.map((p, pIdx) => {
                     const isPturn = room.players[room.currentTurnIndex]?.id === p.id;
-                    const offset = (pIdx - (playersHere.length - 1) / 2) * (20 * sizeMult);
+                    const tokenOffset = (pIdx - (playersHere.length - 1) / 2) * (24 * sizeMult);
                     return (
                       <g
                         key={p.id}
-                        transform={`translate(${offset}, ${-(30 * sizeMult)})`}
+                        transform={`translate(${tokenOffset}, ${-(34 * sizeMult)})`}
                         className={isPturn ? 'animate-bounce' : ''}
                       >
                         <circle
                           cx="0"
                           cy="0"
-                          r={13 * sizeMult}
+                          r={14 * sizeMult}
                           fill="#0f172a"
                           stroke={isPturn ? '#f59e0b' : '#38bdf8'}
                           strokeWidth="2.5"
                         />
                         <clipPath id={`avatarClip_${p.id}_${tile.index}`}>
-                          <circle cx="0" cy="0" r={12 * sizeMult} />
+                          <circle cx="0" cy="0" r={13 * sizeMult} />
                         </clipPath>
                         <image
                           href={p.avatar}
-                          x={-(12 * sizeMult)}
-                          y={-(12 * sizeMult)}
-                          width={24 * sizeMult}
-                          height={24 * sizeMult}
+                          x={-(13 * sizeMult)}
+                          y={-(13 * sizeMult)}
+                          width={26 * sizeMult}
+                          height={26 * sizeMult}
                           clipPath={`url(#avatarClip_${p.id}_${tile.index})`}
                         />
                       </g>

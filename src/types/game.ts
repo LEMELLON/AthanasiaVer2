@@ -106,6 +106,11 @@ export interface TileMapData {
   updatedAt: number;
   tiles: BoardTile[];
   territories?: RealmTerritory[];
+  editorLayout?: {
+    cells: any;
+    gates: any[];
+    finale: any | null;
+  };
 }
 
 export interface PilgrimProfile {

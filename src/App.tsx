@@ -140,7 +140,8 @@ function AthanasiaAppContent() {
     avatarUrl: string,
     maxPlayers: number,
     fillWithBots: boolean,
-    mapId?: string
+    mapId?: string,
+    customMap?: TileMapData
   ) => {
     try {
       const res = await fetch('/api/rooms', {
@@ -152,6 +153,7 @@ function AthanasiaAppContent() {
           hostAvatar: avatarUrl,
           maxPlayers,
           mapId,
+          customMap,
         }),
       });
 
@@ -226,7 +228,7 @@ function AthanasiaAppContent() {
   const handleTestPlayMap = async (map: TileMapData) => {
     setShowMapEditorModal(false);
     const profile = loadPilgrimProfile();
-    await handleCreateRoom(`Test: ${map.name}`, profile.playerName, profile.avatarUrl, 4, true, map.id);
+    await handleCreateRoom(`Test: ${map.name}`, profile.playerName, profile.avatarUrl, 4, true, map.id, map);
     showToast(`Nagsimula ang pagsubok sa "${map.name}" kasama ang AI bots!`);
   };
 

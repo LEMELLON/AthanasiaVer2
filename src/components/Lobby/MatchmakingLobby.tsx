@@ -30,7 +30,8 @@ interface MatchmakingLobbyProps {
     avatarUrl: string,
     maxPlayers: number,
     fillWithBots: boolean,
-    mapId?: string
+    mapId?: string,
+    customMap?: any
   ) => void;
   onOpenRules: () => void;
   onOpenAdmin: () => void;
@@ -69,15 +70,48 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
 
   const fetchMaps = async () => {
     try {
+      let combinedMaps: any[] = [];
       const res = await fetch('/api/maps');
       if (res.ok) {
-        const maps = await res.json();
-        setAvailableMaps(maps);
-        if (maps.length > 0 && !selectedMapId) {
-          setSelectedMapId(maps[0].id);
-        }
+        combinedMaps = await res.json();
+      }
+      const localCustom = localStorage.getItem('athanasia_active_custom_map');
+      if (localCustom) {
+        try {
+          const parsed = JSON.parse(localCustom);
+          if (parsed && parsed.id && !combinedMaps.some(m => m.id === parsed.id)) {
+            combinedMaps.unshift({
+              id: parsed.id,
+              name: parsed.name,
+              description: parsed.description,
+              author: parsed.author,
+              totalTiles: parsed.tiles?.length || 50,
+              gatesCount: parsed.tiles?.filter((t: any) => t.type === 'pintuan').length || 4,
+              pagsubokCount: parsed.tiles?.filter((t: any) => t.type === 'pagsubok').length || 12,
+              kapalaranCount: parsed.tiles?.filter((t: any) => t.type === 'kapalaran').length || 10,
+              fullData: parsed,
+            });
+          }
+        } catch {}
+      }
+      setAvailableMaps(combinedMaps);
+      if (combinedMaps.length > 0 && !selectedMapId) {
+        setSelectedMapId(combinedMaps[0].id);
       }
     } catch {}
+  };
+
+  const getSelectedCustomMap = (mapId: string) => {
+    const found = availableMaps.find(m => m.id === mapId);
+    if (found?.fullData) return found.fullData;
+    const local = localStorage.getItem('athanasia_active_custom_map');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (parsed.id === mapId) return parsed;
+      } catch {}
+    }
+    return undefined;
   };
 
   const fetchRooms = async () => {
@@ -101,13 +135,15 @@ export const MatchmakingLobby: React.FC<MatchmakingLobbyProps> = ({
 
   const handleQuickPlaySolo = () => {
     sounds.playClick();
-    onCreateRoom(`${profile.playerName}'s Sanctuary`, profile.playerName, profile.avatarUrl, 4, true, selectedMapId);
+    const customMap = getSelectedCustomMap(selectedMapId);
+    onCreateRoom(`${profile.playerName}'s Sanctuary`, profile.playerName, profile.avatarUrl, 4, true, selectedMapId, customMap);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sounds.playClick();
-    onCreateRoom(customRoomName, profile.playerName, profile.avatarUrl, maxPlayers, fillWithBots, selectedMapId);
+    const customMap = getSelectedCustomMap(selectedMapId);
+    onCreateRoom(customRoomName, profile.playerName, profile.avatarUrl, maxPlayers, fillWithBots, selectedMapId, customMap);
   };
 
   const handleJoinSubmit = (e: React.FormEvent) => {

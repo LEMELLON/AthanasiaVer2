@@ -30,6 +30,24 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
+// CORS & Preflight handling for Vercel and cross-origin access
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+const apiRouter = express.Router();
+
+// Health check endpoint
+apiRouter.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // In-Memory Room Store
 const rooms: Map<string, GameRoom> = new Map();
 // WebSocket connection registry: roomCode -> Set<WebSocket>
@@ -68,7 +86,8 @@ function createInitialRoom(
   hostName: string,
   hostAvatar: string,
   maxPlayers: number = 4,
-  mapId?: string
+  mapId?: string,
+  customMap?: TileMapData
 ): { room: GameRoom; hostId: string } {
   const hostId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const hostPlayer: PlayerState = {
@@ -88,7 +107,13 @@ function createInitialRoom(
     isEliminated: false,
   };
 
-  const selectedMap = (mapId && mapRegistry.get(mapId)) || CANONICAL_MAP_DATA;
+  if (customMap && customMap.tiles && customMap.tiles.length > 0) {
+    mapRegistry.set(customMap.id, customMap);
+  }
+
+  const selectedMap = (customMap && customMap.tiles && customMap.tiles.length > 0)
+    ? customMap
+    : (mapId && mapRegistry.get(mapId)) || CANONICAL_MAP_DATA;
 
   const room: GameRoom = {
     code,
@@ -419,11 +444,11 @@ function handleBotTurn(room: GameRoom, bot: PlayerState) {
 }
 
 // REST API Endpoints for Vercel Serverless & Client Fallback
-app.get('/api/health', (_req: Request, res: Response) => {
+apiRouter.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-app.get('/api/rooms', (_req: Request, res: Response) => {
+apiRouter.get('/rooms', (_req: Request, res: Response) => {
   const roomList = Array.from(rooms.values()).map(r => ({
     code: r.code,
     name: r.name,
@@ -434,7 +459,7 @@ app.get('/api/rooms', (_req: Request, res: Response) => {
   res.json(roomList);
 });
 
-app.get('/api/rooms/:code', (req: Request, res: Response) => {
+apiRouter.get('/rooms/:code', (req: Request, res: Response) => {
   const code = (req.params.code || '').toUpperCase();
   const room = rooms.get(code);
   if (!room) {
@@ -443,15 +468,15 @@ app.get('/api/rooms/:code', (req: Request, res: Response) => {
   res.json(room);
 });
 
-app.post('/api/rooms', (req: Request, res: Response) => {
-  const { name, hostName, hostAvatar, maxPlayers, mapId } = req.body || {};
+apiRouter.post('/rooms', (req: Request, res: Response) => {
+  const { name, hostName, hostAvatar, maxPlayers, mapId, customMap } = req.body || {};
   const code = generateRoomCode();
-  const { room, hostId } = createInitialRoom(code, name, hostName, hostAvatar, maxPlayers, mapId);
+  const { room, hostId } = createInitialRoom(code, name, hostName, hostAvatar, maxPlayers, mapId, customMap);
   res.json({ room, hostId });
 });
 
 // Map Registry REST Endpoints
-app.get('/api/maps', (_req: Request, res: Response) => {
+apiRouter.get('/maps', (_req: Request, res: Response) => {
   const mapList = Array.from(mapRegistry.values()).map(m => ({
     id: m.id,
     name: m.name,
@@ -467,7 +492,7 @@ app.get('/api/maps', (_req: Request, res: Response) => {
   res.json(mapList);
 });
 
-app.get('/api/maps/:id', (req: Request, res: Response) => {
+apiRouter.get('/maps/:id', (req: Request, res: Response) => {
   const id = req.params.id;
   const mapData = mapRegistry.get(id);
   if (!mapData) {
@@ -476,7 +501,7 @@ app.get('/api/maps/:id', (req: Request, res: Response) => {
   res.json(mapData);
 });
 
-app.post('/api/maps', (req: Request, res: Response) => {
+apiRouter.post('/maps', (req: Request, res: Response) => {
   const customMap: TileMapData = req.body;
   if (!customMap || !customMap.name || !customMap.tiles || customMap.tiles.length === 0) {
     return res.status(400).json({ error: 'Kulang o hindi wasto ang impormasyon ng mapa.' });
@@ -492,7 +517,7 @@ app.post('/api/maps', (req: Request, res: Response) => {
   res.json({ success: true, map: savedMap });
 });
 
-app.delete('/api/maps/:id', (req: Request, res: Response) => {
+apiRouter.delete('/maps/:id', (req: Request, res: Response) => {
   const id = req.params.id;
   if (id === CANONICAL_MAP_DATA.id) {
     return res.status(403).json({ error: 'Hindi maaaring burahin ang Canonical Map.' });
@@ -504,7 +529,7 @@ app.delete('/api/maps/:id', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-app.post('/api/rooms/:code/join', (req: Request, res: Response) => {
+apiRouter.post('/rooms/:code/join', (req: Request, res: Response) => {
   const code = (req.params.code || '').toUpperCase();
   const { name, avatar } = req.body || {};
   const room = rooms.get(code);
@@ -550,7 +575,7 @@ app.post('/api/rooms/:code/join', (req: Request, res: Response) => {
 });
 
 // Room actions endpoint (Roll, Move, Play Card, Chat, Bot Fill, Accuse, Gate Vote)
-app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
+apiRouter.post('/rooms/:code/action', (req: Request, res: Response) => {
   const code = (req.params.code || '').toUpperCase();
   let room = rooms.get(code);
   if (!room) {
@@ -623,9 +648,10 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
     }
 
     case 'SELECT_ROOM_MAP': {
-      if (player && player.isHost && room.status === 'lobby' && payload?.mapId) {
-        const selectedMap = mapRegistry.get(payload.mapId);
+      if (player && player.isHost && room.status === 'lobby') {
+        const selectedMap = payload?.customMap || (payload?.mapId && mapRegistry.get(payload.mapId));
         if (selectedMap) {
+          mapRegistry.set(selectedMap.id, selectedMap);
           room.mapId = selectedMap.id;
           room.mapData = selectedMap;
           room.chatMessages.push({
@@ -684,7 +710,7 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
           break;
         }
 
-        const tile = CANONICAL_BOARD_TILES[finalTile] || CANONICAL_BOARD_TILES[0];
+        const tile = currentMapTiles[finalTile] || currentMapTiles[0];
 
         if (stoppedAtGate || (tile.type === 'pintuan' && !room.diwalingGatesUnlocked[tile.realm])) {
           const gateRealm = stoppedAtGate || tile.realm;
@@ -911,11 +937,12 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
 });
 
 // Admin API
-app.get('/api/admin/settings', (_req: Request, res: Response) => {
+// Admin API
+apiRouter.get('/admin/settings', (_req: Request, res: Response) => {
   res.json(currentAdminSettings);
 });
 
-app.post('/api/admin/settings', (req: Request, res: Response) => {
+apiRouter.post('/admin/settings', (req: Request, res: Response) => {
   const { password, settings } = req.body || {};
   if (password !== currentAdminSettings.systemPassword) {
     return res.status(401).json({ error: 'Maling password ng Admin' });
@@ -926,62 +953,73 @@ app.post('/api/admin/settings', (req: Request, res: Response) => {
   res.json({ success: true, settings: currentAdminSettings });
 });
 
-// Setup WebSocket Server
-const wss = new WebSocketServer({ server, path: '/ws' });
+// Dual-mount apiRouter for both /api/* and root /* to guarantee resilience across Vercel rewrites
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
-wss.on('connection', (ws: WebSocket, req: http.IncomingMessage) => {
-  const urlParams = new URL(req.url || '', `http://${req.headers.host}`).searchParams;
-  const roomCode = (urlParams.get('room') || '').toUpperCase();
+const isVercel = !!process.env.VERCEL;
 
-  if (roomCode) {
-    if (!roomSockets.has(roomCode)) {
-      roomSockets.set(roomCode, new Set());
-    }
-    roomSockets.get(roomCode)!.add(ws);
+if (!isVercel) {
+  // Setup WebSocket Server in persistent environments (local dev / Docker)
+  const wss = new WebSocketServer({ server, path: '/ws' });
 
-    const room = rooms.get(roomCode);
-    if (room) {
-      ws.send(JSON.stringify({ type: 'ROOM_STATE_UPDATE', room }));
-    }
-  }
+  wss.on('connection', (ws: WebSocket, req: http.IncomingMessage) => {
+    const urlParams = new URL(req.url || '', `http://${req.headers.host}`).searchParams;
+    const roomCode = (urlParams.get('room') || '').toUpperCase();
 
-  ws.on('message', (message: string) => {
-    try {
-      const data = JSON.parse(message.toString());
-      if (data.type === 'PING') {
-        ws.send(JSON.stringify({ type: 'PONG' }));
+    if (roomCode) {
+      if (!roomSockets.has(roomCode)) {
+        roomSockets.set(roomCode, new Set());
       }
-    } catch {}
-  });
+      roomSockets.get(roomCode)!.add(ws);
 
-  ws.on('close', () => {
-    if (roomCode && roomSockets.has(roomCode)) {
-      roomSockets.get(roomCode)!.delete(ws);
+      const room = rooms.get(roomCode);
+      if (room) {
+        ws.send(JSON.stringify({ type: 'ROOM_STATE_UPDATE', room }));
+      }
     }
-  });
-});
 
-// Vite Middleware for Dev Mode & Static Build Serving for Production
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true, allowedHosts: true },
-      appType: 'spa',
+    ws.on('message', (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        if (data.type === 'PING') {
+          ws.send(JSON.stringify({ type: 'PONG' }));
+        }
+      } catch {}
     });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+
+    ws.on('close', () => {
+      if (roomCode && roomSockets.has(roomCode)) {
+        roomSockets.get(roomCode)!.delete(ws);
+      }
+    });
+  });
+
+  // Vite Middleware for Dev Mode & Static Build Serving for Production
+  async function startServer() {
+    if (process.env.NODE_ENV !== 'production') {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true, allowedHosts: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } else {
+      app.use(express.static(path.join(__dirname, 'dist')));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+      });
+    }
+
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Athanasia Server] Running on http://0.0.0.0:${PORT}`);
     });
   }
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Athanasia Server] Running on http://0.0.0.0:${PORT}`);
+  startServer().catch(err => {
+    console.error('[Athanasia Server Error]', err);
   });
 }
 
-startServer().catch(err => {
-  console.error('[Athanasia Server Error]', err);
-});
+export default app;
+export { app };

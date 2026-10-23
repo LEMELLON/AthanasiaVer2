@@ -67,10 +67,40 @@ Define these environment variables in your deployment environment:
 
 ---
 
-## 4. How Real-Time Multiplayer Works on Vercel
+---
 
-* **Dual-Mode Networking**: On standard persistent Node servers (or local `npm run dev`), the app connects to `/ws` for sub-millisecond WebSocket updates.
-* **Serverless Compatibility**: On Vercel (where serverless functions terminate after requests), the client includes an automated fallback polling layer that synchronizes `/api/rooms/:code` every 2.5 seconds.
+## 4. Serverless `/api` Architecture & Real-Time Multiplayer on Vercel
+
+### A. Dedicated Serverless Function Handlers (`/api/index.ts` & `/api/[...path].ts`)
+To prevent `405 Method Not Allowed` rejections and avoid SPA fallback routing collisions on Vercel, the app includes dedicated serverless function entrypoints:
+* `/api/index.ts`: Handles requests to `/api` and `/api/`
+* `/api/[...path].ts`: Catch-all serverless function handling dynamic routes such as `/api/rooms`, `/api/rooms/:code/join`, `/api/rooms/:code/action`, `/api/maps`, and `/api/admin/settings`
+* In `server.ts`, all API routes are mounted onto an `apiRouter` that is dual-mounted at both `/api` and `/`, ensuring route resolution regardless of path stripping.
+* Express listener and WebSocket Server are guarded with `if (!process.env.VERCEL)` so the app exports cleanly as a serverless lambda on Vercel while running with persistent WebSockets locally and in Docker.
+
+### B. Isolated Routing (`vercel.json`)
+The `vercel.json` config uses a negative lookahead regex to strictly isolate API endpoints from the static single-page app rewrite:
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index" },
+    { "source": "/api/(.*)", "destination": "/api/[...path]" },
+    { "source": "/((?!api($|/)).*)", "destination": "/index.html" }
+  ]
+}
+```
+
+### C. Map Editor & Room Synchronization
+* **1700x1700 Lattice Symmetry**: Both the Map Editor canvas and the in-game `TileMapRenderer` use the identical 1700x1700 equilateral triangular lattice geometry (`aetheryaLattice.ts`), Baybayin sigils (`ᜇ` Daan, `ᜉ` Pagsubok, `ᜃ` Kapalaran), radial/linear gradients, and territory boundaries.
+* **Dual-Persistence Sync**: When a custom map is saved or test-played, the full `TileMapData` is persisted to both the server registry (`POST /api/maps`) and `localStorage` (`athanasia_active_custom_map`).
+* **Direct Payload Embedding**: During room creation, the full `customMap` object is passed directly to `POST /api/rooms` so that even cold-started serverless instances immediately have access to the exact custom map without relying on shared in-memory state.
+
+### D. Dual-Mode Networking & Fallback Polling
+* On standard persistent Node servers (or local `npm run dev`), the app connects to `/ws` for sub-millisecond WebSocket updates.
+* On Vercel (where serverless lambdas are ephemeral), the client's automated fallback polling synchronizes `/api/rooms/:code` every 2.5 seconds.
 * This ensures that players can join the same room code, see live movement, receive chat messages, and participate in Diwaling gate deductions regardless of hosting platform!
 
 ---

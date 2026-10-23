@@ -7,10 +7,53 @@ import {
   PlacedGate, 
   PlacedFinale 
 } from './AetheryaMapCanvas';
-import { REALM_QUOTAS, centroid, getRealmAtCoordinate } from '../../utils/aetheryaLattice';
+import { REALM_QUOTAS, centroid, getRealmAtCoordinate, isUp } from '../../utils/aetheryaLattice';
 import { CANONICAL_MAP_DATA } from '../../data/canonicalMap';
 import { sounds } from '../../utils/audio';
 import { useLanguage } from '../../utils/i18n';
+
+const AETHERYA_TERRITORIES = [
+  {
+    realm: 'talvaris' as RealmType,
+    name: 'Talvaris (Lupa)',
+    path: 'M 60,60 L 1640,60 Q 1660,260 1600,450 L 60,450 Z',
+    labelX: 120,
+    labelY: 110,
+    color: 'rgba(5, 150, 105, 0.15)',
+  },
+  {
+    realm: 'alabarya' as RealmType,
+    name: 'Alabarya (Apoy)',
+    path: 'M 60,460 L 1640,460 Q 1660,670 1600,870 L 60,870 Z',
+    labelX: 120,
+    labelY: 510,
+    color: 'rgba(220, 38, 38, 0.15)',
+  },
+  {
+    realm: 'alonawon' as RealmType,
+    name: 'Alonawon (Tubig)',
+    path: 'M 60,880 L 1640,880 Q 1660,1070 1600,1260 L 60,1260 Z',
+    labelX: 120,
+    labelY: 930,
+    color: 'rgba(2, 132, 199, 0.15)',
+  },
+  {
+    realm: 'himaraya' as RealmType,
+    name: 'Himaraya (Hangin)',
+    path: 'M 60,1270 L 1640,1270 Q 1660,1470 1600,1640 L 60,1640 Z',
+    labelX: 120,
+    labelY: 1320,
+    color: 'rgba(124, 58, 237, 0.15)',
+  },
+  {
+    realm: 'aetherya' as RealmType,
+    name: 'Aetherya (Sanctuary)',
+    path: 'M 850,760 C 954,760 1040,845 1040,950 C 1040,1054 954,1140 850,1140 C 745,1140 660,1054 660,950 C 660,845 745,760 850,760 Z',
+    labelX: 850,
+    labelY: 910,
+    color: 'rgba(234, 179, 8, 0.22)',
+  },
+];
 import { 
   Save, 
   RotateCcw, 
@@ -84,9 +127,23 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
     ]);
   }, [cells, gates, finale]);
 
-  // Seed with canonical layout on initial mount if available
+  // Seed with saved custom map or canonical layout on initial mount
   useEffect(() => {
-    // Generate default serpentine path on the 1700x1700 lattice satisfying exact quotas
+    try {
+      const saved = localStorage.getItem('athanasia_active_custom_map');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.editorLayout && parsed.editorLayout.cells && Object.keys(parsed.editorLayout.cells).length > 0) {
+          setCells(parsed.editorLayout.cells);
+          setGates(parsed.editorLayout.gates || []);
+          setFinale(parsed.editorLayout.finale || null);
+          if (parsed.name) setMapName(parsed.name);
+          if (parsed.description) setMapDescription(parsed.description);
+          return;
+        }
+      }
+    } catch {}
+    // Fallback: Generate default serpentine path on the 1700x1700 lattice satisfying exact quotas
     seedCanonicalTemplate();
   }, []);
 
@@ -395,6 +452,7 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
           gridY: cell.r,
           posX: center.x,
           posY: center.y,
+          orientation: isUp(cell.r, cell.c) ? 'up' : 'down',
         });
         currentIndex++;
       });
@@ -413,6 +471,7 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
         gridY: Math.round(finale.vy / 80),
         posX: finale.vx,
         posY: finale.vy,
+        orientation: 'up',
       });
     }
 
@@ -432,7 +491,11 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
       createdAt: Date.now(),
       updatedAt: Date.now(),
       tiles: serializedTiles,
+      territories: AETHERYA_TERRITORIES,
+      editorLayout: { cells, gates, finale },
     };
+
+    localStorage.setItem('athanasia_active_custom_map', JSON.stringify(mapData));
 
     try {
       const res = await fetch('/api/maps', {
@@ -442,16 +505,13 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
       });
 
       if (res.ok) {
-        localStorage.setItem('athanasia_active_custom_map', JSON.stringify(mapData));
         showToast(t.saveSuccess);
         if (onMapSaved) onMapSaved(mapData);
       } else {
-        localStorage.setItem('athanasia_active_custom_map', JSON.stringify(mapData));
         showToast(t.saveSuccess);
         if (onMapSaved) onMapSaved(mapData);
       }
     } catch {
-      localStorage.setItem('athanasia_active_custom_map', JSON.stringify(mapData));
       showToast(t.saveSuccess);
       if (onMapSaved) onMapSaved(mapData);
     }
@@ -495,7 +555,7 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
   };
 
   // Test Play
-  const handleTestPlay = () => {
+  const handleTestPlay = async () => {
     sounds.playClick();
     const serialized = serializeToBoardTiles();
     const mapData: TileMapData = {
@@ -506,7 +566,20 @@ export const TileMapEditor: React.FC<TileMapEditorProps> = ({
       createdAt: Date.now(),
       updatedAt: Date.now(),
       tiles: serialized,
+      territories: AETHERYA_TERRITORIES,
+      editorLayout: { cells, gates, finale },
     };
+
+    localStorage.setItem('athanasia_active_custom_map', JSON.stringify(mapData));
+
+    try {
+      await fetch('/api/maps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mapData),
+      });
+    } catch {}
+
     if (onTestPlay) {
       onTestPlay(mapData);
     }

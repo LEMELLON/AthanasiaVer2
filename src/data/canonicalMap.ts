@@ -1,51 +1,98 @@
 import { BoardTile, RealmTerritory, TileMapData } from '../types/game';
 import { CANONICAL_BOARD_TILES } from './canonicalCards';
+import { centroid, isUp } from '../utils/aetheryaLattice';
 
 /**
  * Builds the canonical 50-space serpentine interlocking tile map with exact
- * geometric coordinates (triangular tessellation and hexagonal gates).
+ * 1700x1700 geometric coordinates matching the Aetherya lattice editor.
  */
 export function buildCanonicalMapData(): TileMapData {
-  // Pre-calculate visual coordinates for the 50-tile serpentine path on a 1150 x 700 canvas.
-  // Row 0: Talvaris (Eastward) - Tiles 0 to 17
-  // Row 1: Alabarya (Westward) - Tiles 18 to 31
-  // Row 2: Alonawon (Eastward) - Tiles 32 to 42
-  // Row 3: Himaraya (Westward) - Tiles 43 to 49
-  // Row 4: Aetherya (Center goal) - Tile 50
-
-  const enhancedTiles: BoardTile[] = CANONICAL_BOARD_TILES.map((t) => {
+  // Pre-calculated lattice coordinates for the 50-tile serpentine path matching seedCanonicalTemplate
+  const tiles: BoardTile[] = CANONICAL_BOARD_TILES.map((t) => {
     let posX = 100;
     let posY = 100;
-    let orientation: 'up' | 'down' = (t.index % 2 === 0) ? 'up' : 'down';
+    let gridX = t.gridX ?? 0;
+    let gridY = t.gridY ?? 0;
+    let orientation: 'up' | 'down' = 'up';
 
-    if (t.realm === 'talvaris') {
-      // Row 0, X spreads from 100 to 1020
-      const step = t.index; // 0 to 17
-      posX = 110 + step * 52;
-      posY = 110 + (step % 2 === 1 ? 12 : -12);
-      orientation = step % 2 === 0 ? 'up' : 'down';
-    } else if (t.realm === 'alabarya') {
-      // Row 1, Westward from 1020 down to 260
-      const step = t.index - 18; // 0 to 13
-      posX = 990 - step * 56;
-      posY = 245 + (step % 2 === 1 ? 12 : -12);
-      orientation = step % 2 === 0 ? 'down' : 'up';
-    } else if (t.realm === 'alonawon') {
-      // Row 2, Eastward from 260 to 860
-      const step = t.index - 32; // 0 to 10
-      posX = 280 + step * 58;
-      posY = 380 + (step % 2 === 1 ? 12 : -12);
-      orientation = step % 2 === 0 ? 'up' : 'down';
-    } else if (t.realm === 'himaraya') {
-      // Row 3, Westward from 860 down to 480
-      const step = t.index - 43; // 0 to 6
-      posX = 830 - step * 60;
-      posY = 510 + (step % 2 === 1 ? 12 : -12);
-      orientation = step % 2 === 0 ? 'down' : 'up';
+    if (t.index === 0) {
+      // Start tile right before Gate 1
+      gridY = 3;
+      gridX = 6;
+      const c = centroid(3, 6);
+      posX = c.x;
+      posY = c.y;
+      orientation = isUp(3, 6) ? 'up' : 'down';
+    } else if (t.index === 1) {
+      // Gate 1: Talvaris Entrance Hexagon
+      gridY = 3;
+      gridX = 7;
+      posX = 216;
+      posY = 187;
+      orientation = 'up';
+    } else if (t.index >= 2 && t.index <= 17) {
+      // Talvaris Path: row 3, columns 8 to 38 (Eastward)
+      const i = t.index - 2;
+      gridY = 3;
+      gridX = 8 + i * 2;
+      const c = centroid(gridY, gridX);
+      posX = c.x;
+      posY = c.y;
+      orientation = isUp(gridY, gridX) ? 'up' : 'down';
+    } else if (t.index === 18) {
+      // Gate 2: Alabarya Entrance Hexagon
+      gridY = 10;
+      gridX = 40;
+      posX = 1476;
+      posY = 561;
+      orientation = 'up';
+    } else if (t.index >= 19 && t.index <= 31) {
+      // Alabarya Path: row 10, columns 38 down to 14 (Westward)
+      const i = t.index - 19;
+      gridY = 10;
+      gridX = 38 - i * 2;
+      const c = centroid(gridY, gridX);
+      posX = c.x;
+      posY = c.y;
+      orientation = isUp(gridY, gridX) ? 'up' : 'down';
+    } else if (t.index === 32) {
+      // Gate 3: Alonawon Entrance Hexagon
+      gridY = 16;
+      gridX = 10;
+      posX = 360;
+      posY = 935;
+      orientation = 'up';
+    } else if (t.index >= 33 && t.index <= 42) {
+      // Alonawon Path: row 16, columns 12 to 30 (Eastward)
+      const i = t.index - 33;
+      gridY = 16;
+      gridX = 12 + i * 2;
+      const c = centroid(gridY, gridX);
+      posX = c.x;
+      posY = c.y;
+      orientation = isUp(gridY, gridX) ? 'up' : 'down';
+    } else if (t.index === 43) {
+      // Gate 4: Himaraya Entrance Hexagon
+      gridY = 22;
+      gridX = 36;
+      posX = 1332;
+      posY = 1309;
+      orientation = 'up';
+    } else if (t.index >= 44 && t.index <= 49) {
+      // Himaraya Path: row 22, columns 34 down to 24 (Westward)
+      const i = t.index - 44;
+      gridY = 22;
+      gridX = 34 - i * 2;
+      const c = centroid(gridY, gridX);
+      posX = c.x;
+      posY = c.y;
+      orientation = isUp(gridY, gridX) ? 'up' : 'down';
     } else {
-      // Aetherya (Tile 50)
-      posX = 420;
-      posY = 580;
+      // Index 50: Aetherya Sanctuary Finale
+      gridY = 16;
+      gridX = 24;
+      posX = 850;
+      posY = 950;
       orientation = 'up';
     }
 
@@ -53,6 +100,8 @@ export function buildCanonicalMapData(): TileMapData {
       ...t,
       posX,
       posY,
+      gridX,
+      gridY,
       orientation,
     };
   });
@@ -61,41 +110,41 @@ export function buildCanonicalMapData(): TileMapData {
     {
       realm: 'talvaris',
       name: 'Talvaris (Lupa)',
-      path: 'M 50,40 L 1080,40 Q 1110,110 1080,180 L 50,180 Z',
-      labelX: 80,
-      labelY: 70,
+      path: 'M 60,60 L 1640,60 Q 1660,260 1600,450 L 60,450 Z',
+      labelX: 120,
+      labelY: 110,
       color: 'rgba(5, 150, 105, 0.15)',
     },
     {
       realm: 'alabarya',
       name: 'Alabarya (Apoy)',
-      path: 'M 190,190 L 1080,190 Q 1110,245 1050,310 L 190,310 Z',
-      labelX: 1040,
-      labelY: 220,
+      path: 'M 60,460 L 1640,460 Q 1660,670 1600,870 L 60,870 Z',
+      labelX: 120,
+      labelY: 510,
       color: 'rgba(220, 38, 38, 0.15)',
     },
     {
       realm: 'alonawon',
       name: 'Alonawon (Tubig)',
-      path: 'M 210,320 L 960,320 Q 980,380 940,440 L 210,440 Z',
-      labelX: 240,
-      labelY: 350,
+      path: 'M 60,880 L 1640,880 Q 1660,1070 1600,1260 L 60,1260 Z',
+      labelX: 120,
+      labelY: 930,
       color: 'rgba(2, 132, 199, 0.15)',
     },
     {
       realm: 'himaraya',
       name: 'Himaraya (Hangin)',
-      path: 'M 350,450 L 930,450 Q 950,510 910,570 L 350,570 Z',
-      labelX: 890,
-      labelY: 480,
+      path: 'M 60,1270 L 1640,1270 Q 1660,1470 1600,1640 L 60,1640 Z',
+      labelX: 120,
+      labelY: 1320,
       color: 'rgba(124, 58, 237, 0.15)',
     },
     {
       realm: 'aetherya',
       name: 'Aetherya (Sanctuary)',
-      path: 'M 320,530 L 550,530 Q 570,610 520,670 L 300,670 Z',
-      labelX: 430,
-      labelY: 660,
+      path: 'M 850,760 C 954,760 1040,845 1040,950 C 1040,1054 954,1140 850,1140 C 745,1140 660,1054 660,950 C 660,845 745,760 850,760 Z',
+      labelX: 850,
+      labelY: 910,
       color: 'rgba(234, 179, 8, 0.22)',
     },
   ];
@@ -107,7 +156,7 @@ export function buildCanonicalMapData(): TileMapData {
     author: 'Babaylan Tala',
     createdAt: 1713800000000,
     updatedAt: 1713800000000,
-    tiles: enhancedTiles,
+    tiles,
     territories,
   };
 }
