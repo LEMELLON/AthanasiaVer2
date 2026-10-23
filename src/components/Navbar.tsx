@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, ShieldAlert, BookOpen, Settings, Copy, Check, LogOut, Flame, Droplets, Wind, Mountain, Crown } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, BookOpen, Settings, Copy, Check, LogOut, Flame, Droplets, Wind, Mountain, Crown, User, Compass } from 'lucide-react';
 import { GameRoom, PlayerState, RealmType } from '../types/game';
 import { sounds } from '../utils/audio';
 import { getPlayerRealm } from '../utils/modularCardEngine';
@@ -9,6 +9,8 @@ interface NavbarProps {
   currentPlayer: PlayerState | null;
   onOpenRules: () => void;
   onOpenAdmin: () => void;
+  onOpenProfile?: () => void;
+  onOpenMapEditor?: () => void;
   onLeaveRoom: () => void;
 }
 
@@ -17,6 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentPlayer,
   onOpenRules,
   onOpenAdmin,
+  onOpenProfile,
+  onOpenMapEditor,
   onLeaveRoom,
 }) => {
   const [isMuted, setIsMuted] = useState(sounds.getMuted());
@@ -109,19 +113,43 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
         </button>
 
+        {/* Map Editor Button */}
+        {onOpenMapEditor && (
+          <button
+            onClick={() => { sounds.playClick(); onOpenMapEditor(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
+            title="Buksan ang Tile Map Editor"
+          >
+            <Compass className="w-4 h-4 text-amber-400" />
+            <span className="hidden sm:inline">Map Editor</span>
+          </button>
+        )}
+
+        {/* Profile Button */}
+        {onOpenProfile && (
+          <button
+            onClick={() => { sounds.playClick(); onOpenProfile(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-600/40 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
+            title="Profile ng Manlalakbay"
+          >
+            <User className="w-4 h-4" />
+            <span className="hidden sm:inline">Profile</span>
+          </button>
+        )}
+
         {/* Rules Button */}
         <button
           onClick={() => { sounds.playClick(); onOpenRules(); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
         >
           <BookOpen className="w-4 h-4 text-amber-400" />
-          <span className="hidden sm:inline">Gabay / Alituntunin</span>
+          <span className="hidden sm:inline">Gabay</span>
         </button>
 
         {/* Admin Button */}
         <button
           onClick={() => { sounds.playClick(); onOpenAdmin(); }}
-          className="p-2 rounded-lg bg-amber-950/40 border border-amber-600/30 text-amber-300 hover:bg-amber-900/50 hover:border-amber-500 transition-colors"
+          className="p-2 rounded-lg bg-amber-950/40 border border-amber-600/30 text-amber-300 hover:bg-amber-900/50 hover:border-amber-500 transition-colors cursor-pointer"
           title="Admin Suite (System Settings & Card Builder)"
         >
           <Settings className="w-4 h-4" />

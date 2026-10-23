@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { BoardTile, GameRoom, PlayerState, RealmType } from '../../types/game';
 import { CANONICAL_BOARD_TILES } from '../../data/canonicalCards';
-import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Sparkles, Flame, Droplets, Wind, Mountain, Eye } from 'lucide-react';
+import { CANONICAL_MAP_DATA } from '../../data/canonicalMap';
+import { TileMapRenderer } from './TileMapRenderer';
+import { Shield, Lock, Unlock, HelpCircle, Shuffle, Footprints, Crown, Sparkles, Flame, Droplets, Wind, Mountain, Eye, Map, LayoutGrid } from 'lucide-react';
 import { sounds } from '../../utils/audio';
 
 interface GameBoardProps {
@@ -16,6 +18,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onTileClick,
 }) => {
   const [selectedTile, setSelectedTile] = useState<BoardTile | null>(null);
+  const [viewMode, setViewMode] = useState<'tile_map' | 'simple_track'>(() => {
+    return (localStorage.getItem('athanasia_board_view_mode') as 'tile_map' | 'simple_track') || 'tile_map';
+  });
+
+  const handleToggleView = (mode: 'tile_map' | 'simple_track') => {
+    sounds.playClick();
+    setViewMode(mode);
+    localStorage.setItem('athanasia_board_view_mode', mode);
+  };
+
+  const activeMapData = room.mapData || CANONICAL_MAP_DATA;
+  const boardTiles = activeMapData.tiles || CANONICAL_BOARD_TILES;
 
   const realmColors: Record<RealmType, { border: string; bg: string; text: string; glow: string; name: string }> = {
     talvaris: {
@@ -84,42 +98,76 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full overflow-x-auto overflow-y-hidden pb-4">
-      {/* Realm Breadcrumb Header */}
-      <div className="flex items-center justify-between mb-3 px-2 text-xs text-slate-400">
-        <div className="flex items-center gap-4 flex-wrap">
-          <span className="flex items-center gap-1.5 text-emerald-400">
-            <Mountain className="w-3.5 h-3.5" /> Talvaris (Tiles 1-17)
+      {/* Top Header: Realm Breadcrumbs & Dual-View Mode Switcher */}
+      <div className="flex items-center justify-between mb-3 px-2 text-xs text-slate-400 gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="flex items-center gap-1 text-emerald-400 font-medium">
+            <Mountain className="w-3.5 h-3.5" /> Talvaris
           </span>
           <span className="text-slate-600">➔</span>
-          <span className="flex items-center gap-1.5 text-amber-400">
-            <Flame className="w-3.5 h-3.5" /> Alabarya (Tiles 18-31)
+          <span className="flex items-center gap-1 text-amber-400 font-medium">
+            <Flame className="w-3.5 h-3.5" /> Alabarya
           </span>
           <span className="text-slate-600">➔</span>
-          <span className="flex items-center gap-1.5 text-cyan-400">
-            <Droplets className="w-3.5 h-3.5" /> Alonawon (Tiles 32-42)
+          <span className="flex items-center gap-1 text-cyan-400 font-medium">
+            <Droplets className="w-3.5 h-3.5" /> Alonawon
           </span>
           <span className="text-slate-600">➔</span>
-          <span className="flex items-center gap-1.5 text-purple-400">
-            <Wind className="w-3.5 h-3.5" /> Himaraya (Tiles 43-49)
+          <span className="flex items-center gap-1 text-purple-400 font-medium">
+            <Wind className="w-3.5 h-3.5" /> Himaraya
           </span>
           <span className="text-slate-600">➔</span>
-          <span className="flex items-center gap-1.5 text-yellow-300 font-bold">
-            <Crown className="w-3.5 h-3.5" /> Aetherya (Tile 50)
+          <span className="flex items-center gap-1 text-yellow-300 font-bold">
+            <Crown className="w-3.5 h-3.5" /> Aetherya
           </span>
+        </div>
+
+        {/* Dual-View Switcher */}
+        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 p-0.5 rounded-xl shrink-0">
+          <button
+            onClick={() => handleToggleView('tile_map')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-cinzel transition-all cursor-pointer ${
+              viewMode === 'tile_map'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-700 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Map className="w-3.5 h-3.5" />
+            <span>Mahiwagang Tile Map</span>
+          </button>
+          <button
+            onClick={() => handleToggleView('simple_track')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-cinzel transition-all cursor-pointer ${
+              viewMode === 'simple_track'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-700 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Payak na Track</span>
+          </button>
         </div>
       </div>
 
-      {/* 50-Tile Serpentine Grid Layout */}
-      <div className="min-w-[1050px] p-4 rounded-3xl bg-slate-950/80 border border-slate-800/80 shadow-2xl relative">
-        {/* Background Atmosphere Elements */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/10 via-amber-950/10 to-purple-950/10 rounded-3xl pointer-events-none" />
+      {/* VIEW 1: Authentic Mahiwagang Serpentine Tile Map (Tessellated SVG) */}
+      {viewMode === 'tile_map' ? (
+        <TileMapRenderer
+          mapData={activeMapData}
+          room={room}
+          currentPlayer={currentPlayer}
+          selectedTile={selectedTile}
+          onSelectTile={handleTileSelect}
+        />
+      ) : (
+        /* VIEW 2: Payak na Serpentine Track (Grid Rows) */
+        <div className="min-w-[1050px] p-4 rounded-3xl bg-slate-950/80 border border-slate-800/80 shadow-2xl relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/10 via-amber-950/10 to-purple-950/10 rounded-3xl pointer-events-none" />
 
-        {/* Serpentine Rows (0 to 4) */}
-        {[0, 1, 2, 3, 4].map((rowIdx) => {
-          const rowTiles = CANONICAL_BOARD_TILES.filter(t => t.gridY === rowIdx).sort((a, b) => {
-            // Rows 0 and 2 go Left to Right, Rows 1 and 3 go Right to Left
-            return rowIdx % 2 === 0 ? a.gridX - b.gridX : b.gridX - a.gridX;
-          });
+          {/* Serpentine Rows (0 to 4) */}
+          {[0, 1, 2, 3, 4].map((rowIdx) => {
+            const rowTiles = boardTiles.filter((t) => t.gridY === rowIdx).sort((a, b) => {
+              return rowIdx % 2 === 0 ? a.gridX - b.gridX : b.gridX - a.gridX;
+            });
 
           return (
             <div key={rowIdx} className="flex items-center justify-start gap-2 mb-3 relative">
@@ -216,6 +264,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           );
         })}
       </div>
+      )}
 
       {/* Tile Inspection Card Modal */}
       {selectedTile && (

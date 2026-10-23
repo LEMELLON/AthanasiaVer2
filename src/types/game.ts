@@ -83,6 +83,35 @@ export interface BoardTile {
   guardianName?: string;
   gridX: number; // coordinate for visual layout
   gridY: number;
+  orientation?: 'up' | 'down'; // triangular orientation
+  posX?: number; // canvas X (0 - 1200)
+  posY?: number; // canvas Y (0 - 700)
+}
+
+export interface RealmTerritory {
+  realm: RealmType;
+  name: string;
+  path: string; // SVG path
+  labelX: number;
+  labelY: number;
+  color: string;
+}
+
+export interface TileMapData {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  createdAt: number;
+  updatedAt: number;
+  tiles: BoardTile[];
+  territories?: RealmTerritory[];
+}
+
+export interface PilgrimProfile {
+  playerName: string;
+  characterName: string;
+  avatarUrl: string;
 }
 
 export interface PlayerState {
@@ -153,6 +182,9 @@ export interface GameRoom {
   winner?: 'aninag' | 'impostor';
   historyLog: string[];
   cardsDataVersion: number;
+  mapId?: string;
+  mapData?: TileMapData;
+  viewMode?: 'tile_map' | 'simple_track';
 }
 
 export interface AdminSettings {

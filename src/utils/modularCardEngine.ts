@@ -1,4 +1,4 @@
-import { CardEffect, GameCard, GameRoom, PlayerState, RealmType } from '../types/game';
+import { BoardTile, CardEffect, GameCard, GameRoom, PlayerState, RealmType } from '../types/game';
 
 export function getPlayerRealm(tileIndex: number): RealmType {
   if (tileIndex <= 17) return 'talvaris';
@@ -23,25 +23,39 @@ export function isGateTile(tileIndex: number): { isGate: boolean; realm?: RealmT
 export function calculateClampedMovement(
   currentTile: number,
   delta: number,
-  gatesUnlocked: Record<RealmType, boolean>
+  gatesUnlocked: Record<RealmType, boolean>,
+  customTiles?: BoardTile[]
 ): { finalTile: number; stoppedAtGate?: RealmType } {
+  const maxTile = customTiles && customTiles.length > 0 ? customTiles[customTiles.length - 1].index : 50;
   let target = currentTile + delta;
   if (target < 0) target = 0;
-  if (target > 50) target = 50;
+  if (target > maxTile) target = maxTile;
+
+  // Determine gates from map tiles or canonical defaults
+  const gateMap: { index: number; realm: RealmType }[] = [];
+  if (customTiles && customTiles.length > 0) {
+    customTiles.forEach(t => {
+      if (t.type === 'pintuan') {
+        gateMap.push({ index: t.index, realm: t.realm });
+      }
+    });
+  } else {
+    gateMap.push(
+      { index: 1, realm: 'talvaris' },
+      { index: 18, realm: 'alabarya' },
+      { index: 32, realm: 'alonawon' },
+      { index: 43, realm: 'himaraya' }
+    );
+  }
+
+  gateMap.sort((a, b) => a.index - b.index);
 
   // Check realm gates on forward movement
   if (delta > 0) {
-    if (currentTile < 1 && target >= 1 && !gatesUnlocked['talvaris']) {
-      return { finalTile: 1, stoppedAtGate: 'talvaris' };
-    }
-    if (currentTile < 18 && target >= 18 && !gatesUnlocked['alabarya']) {
-      return { finalTile: 18, stoppedAtGate: 'alabarya' };
-    }
-    if (currentTile < 32 && target >= 32 && !gatesUnlocked['alonawon']) {
-      return { finalTile: 32, stoppedAtGate: 'alonawon' };
-    }
-    if (currentTile < 43 && target >= 43 && !gatesUnlocked['himaraya']) {
-      return { finalTile: 43, stoppedAtGate: 'himaraya' };
+    for (const gate of gateMap) {
+      if (currentTile < gate.index && target >= gate.index && !gatesUnlocked[gate.realm]) {
+        return { finalTile: gate.index, stoppedAtGate: gate.realm };
+      }
     }
   }
 

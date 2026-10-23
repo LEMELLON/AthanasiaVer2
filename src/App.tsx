@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GameRoom, PlayerState, AdminSettings, GameCard } from './types/game';
+import { GameRoom, PlayerState, AdminSettings, GameCard, TileMapData } from './types/game';
 import { Navbar } from './components/Navbar';
 import { MatchmakingLobby } from './components/Lobby/MatchmakingLobby';
 import { GameBoard } from './components/Board/GameBoard';
@@ -18,9 +18,12 @@ import { AccusationModal } from './components/Modals/AccusationModal';
 import { RulesModal } from './components/Modals/RulesModal';
 import { VictoryModal } from './components/Modals/VictoryModal';
 import { AdminModal } from './components/Admin/AdminModal';
+import { PilgrimProfileEditor } from './components/Profile/PilgrimProfileEditor';
+import { TileMapEditor } from './components/MapEditor/TileMapEditor';
 import { DEFAULT_ADMIN_SETTINGS } from './data/canonicalCards';
+import { loadPilgrimProfile } from './utils/cookie';
 import { sounds } from './utils/audio';
-import { Play, Users, Bot, Crown, Sparkles, AlertCircle } from 'lucide-react';
+import { Play, Users, Bot, Crown, Sparkles, AlertCircle, Trash2, MapPin, Compass } from 'lucide-react';
 
 export default function App() {
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
@@ -31,6 +34,14 @@ export default function App() {
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showAccusationModal, setShowAccusationModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMapEditorModal, setShowMapEditorModal] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 4000);
+  };
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -83,6 +94,19 @@ export default function App() {
     };
   }, [currentRoom?.code]);
 
+  // Detect if current player was kicked from the lobby
+  useEffect(() => {
+    if (currentRoom && currentPlayerId) {
+      const isStillMember = currentRoom.players.some(p => p.id === currentPlayerId);
+      if (!isStillMember) {
+        showToast('Pinaalis ka ng Host mula sa silid ng paglalakbay.');
+        setCurrentRoom(null);
+        setCurrentPlayerId('');
+        localStorage.removeItem('athanasia_player_id');
+      }
+    }
+  }, [currentRoom, currentPlayerId]);
+
   // Dispatch an action to the server
   const sendRoomAction = async (action: string, payload?: any) => {
     if (!currentRoom || !currentPlayerId) return;
@@ -113,7 +137,8 @@ export default function App() {
     hostName: string,
     avatarUrl: string,
     maxPlayers: number,
-    fillWithBots: boolean
+    fillWithBots: boolean,
+    mapId?: string
   ) => {
     try {
       const res = await fetch('/api/rooms', {
@@ -124,6 +149,7 @@ export default function App() {
           hostName,
           hostAvatar: avatarUrl,
           maxPlayers,
+          mapId,
         }),
       });
 
@@ -155,7 +181,7 @@ export default function App() {
         }
       }
     } catch (err) {
-      alert('Hindi makalikha ng silid. Pakisubukang muli.');
+      showToast('Hindi makalikha ng silid. Pakisubukang muli.');
     }
   };
 
@@ -177,10 +203,10 @@ export default function App() {
         localStorage.setItem('athanasia_player_id', data.playerId);
       } else {
         const errData = await res.json();
-        alert(errData.error || 'Hindi makasali sa silid.');
+        showToast(errData.error || 'Hindi makasali sa silid.');
       }
     } catch {
-      alert('Error sa pagsali sa silid. Pakisuri ang code.');
+      showToast('Error sa pagsali sa silid. Pakisuri ang code.');
     }
   };
 
@@ -189,14 +215,37 @@ export default function App() {
     setCurrentPlayerId('');
   };
 
+  const handleKickPlayer = (targetPlayerId: string, targetName: string) => {
+    sounds.playClick();
+    sendRoomAction('KICK_PLAYER', { targetPlayerId });
+    showToast(`Pinaalis si ${targetName} mula sa silid.`);
+  };
+
+  const handleTestPlayMap = async (map: TileMapData) => {
+    setShowMapEditorModal(false);
+    const profile = loadPilgrimProfile();
+    await handleCreateRoom(`Test: ${map.name}`, profile.playerName, profile.avatarUrl, 4, true, map.id);
+    showToast(`Nagsimula ang pagsubok sa "${map.name}" kasama ang AI bots!`);
+  };
+
   return (
-    <div className="min-h-screen bg-[#0b0f17] text-slate-100 flex flex-col justify-between">
+    <div className="min-h-screen bg-[#0b0f17] text-slate-100 flex flex-col justify-between relative">
+      {/* Toast Notification Banner */}
+      {notification && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 border border-amber-500/80 text-amber-200 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-medium animate-fadeIn">
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{notification}</span>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <Navbar
         room={currentRoom}
         currentPlayer={currentPlayer}
         onOpenRules={() => setShowRulesModal(true)}
         onOpenAdmin={() => setShowAdminModal(true)}
+        onOpenProfile={() => setShowProfileModal(true)}
+        onOpenMapEditor={() => setShowMapEditorModal(true)}
         onLeaveRoom={handleLeaveRoom}
       />
 
@@ -209,6 +258,8 @@ export default function App() {
             onCreateRoom={handleCreateRoom}
             onOpenRules={() => setShowRulesModal(true)}
             onOpenAdmin={() => setShowAdminModal(true)}
+            onOpenProfile={() => setShowProfileModal(true)}
+            onOpenMapEditor={() => setShowMapEditorModal(true)}
           />
         </main>
       ) : currentRoom.status === 'lobby' ? (
@@ -223,6 +274,12 @@ export default function App() {
                 <h2 className="text-xl font-bold font-cinzel text-amber-100 mt-0.5">
                   {currentRoom.name}
                 </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs text-amber-300/90 font-medium font-cinzel">
+                    Mapa: {currentRoom.mapData?.name || 'Canonical Diwa Sanctuary (50 Tiles)'}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400">Code ng Silid:</span>
@@ -232,7 +289,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Players in Lobby */}
+            {/* Players in Lobby with Host Kick Controls */}
             <div>
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-3">
                 <span className="flex items-center gap-1.5 font-cinzel">
@@ -251,28 +308,44 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {currentRoom.players.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-3 relative shadow-md"
-                  >
-                    <img src={p.avatar} alt={p.name} className="w-12 h-12 rounded-xl object-cover border border-amber-500/40" />
-                    <div className="flex-1">
-                      <div className="font-semibold text-xs text-slate-200 flex items-center gap-1.5">
-                        <span>{p.name}</span>
-                        {p.isHost && (
-                          <span className="text-[9px] bg-amber-950 border border-amber-600/40 text-amber-400 px-1.5 py-0.2 rounded font-bold">HOST</span>
-                        )}
-                        {p.isBot && (
-                          <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.2 rounded font-bold">AI</span>
-                        )}
+                {currentRoom.players.map((p) => {
+                  const canKick = currentPlayer?.isHost && p.id !== currentPlayer.id;
+                  return (
+                    <div
+                      key={p.id}
+                      className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 relative shadow-md hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={p.avatar} alt={p.name} className="w-12 h-12 rounded-xl object-cover border border-amber-500/40" />
+                        <div>
+                          <div className="font-semibold text-xs text-slate-200 flex items-center gap-1.5">
+                            <span>{p.name}</span>
+                            {p.isHost && (
+                              <span className="text-[9px] bg-amber-950 border border-amber-600/40 text-amber-400 px-1.5 py-0.2 rounded font-bold">HOST</span>
+                            )}
+                            {p.isBot && (
+                              <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.2 rounded font-bold">AI</span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-serif italic mt-0.5">
+                            Handa na para sa Athanasia
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 font-serif italic mt-0.5">
-                        Handa na para sa Athanasia
-                      </div>
+
+                      {/* HOST KICK BUTTON */}
+                      {canKick && (
+                        <button
+                          onClick={() => handleKickPlayer(p.id, p.name)}
+                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-950/60 border border-transparent hover:border-rose-800 cursor-pointer transition-all"
+                          title={`Paalisin si ${p.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -306,30 +379,35 @@ export default function App() {
           </div>
         </main>
       ) : (
-        /* Active Game Arena View */
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col gap-4 pb-48">
-          {/* Top Board & Game Status Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
-            {/* Tactical Board Map (Col Span 3) */}
-            <div className="lg:col-span-3">
-              <GameBoard
-                room={currentRoom}
-                currentPlayer={currentPlayer}
-              />
+        /* Active Board Arena Match */
+        <main className="flex-1 flex flex-col justify-between p-3 max-w-[1440px] w-full mx-auto gap-4">
+          {/* Top Board Area: 50-Tile Dual-View Serpentine Grid */}
+          <GameBoard
+            room={currentRoom}
+            currentPlayer={currentPlayer}
+          />
+
+          {/* Middle Control Console & Chat */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            {/* Left 2 Cols: Turn Status, Dice Roller & Action Banner */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              {(() => {
+                const isMyTurn = currentRoom.players[currentRoom.currentTurnIndex]?.id === currentPlayer?.id;
+                const canRollDice = isMyTurn && currentRoom.status === 'playing' && currentRoom.turnPhase === 'roll';
+                return (
+                  <DiceRoller
+                    isCurrentPlayerTurn={isMyTurn}
+                    canRoll={canRollDice}
+                    lastRoll={currentRoom.activeDiceRoll}
+                    onRoll={() => sendRoomAction('ROLL_DICE')}
+                    halveNextRoll={currentPlayer?.halveNextRoll}
+                  />
+                );
+              })()}
             </div>
 
-            {/* Right Column: Dice & Live Chat (Col Span 1) */}
-            <div className="flex flex-col gap-4">
-              {/* Dice Roller */}
-              <DiceRoller
-                isCurrentPlayerTurn={currentRoom.players[currentRoom.currentTurnIndex]?.id === currentPlayer?.id}
-                canRoll={currentRoom.turnPhase === 'roll'}
-                lastRoll={currentRoom.activeDiceRoll}
-                onRoll={() => sendRoomAction('ROLL_DICE')}
-                halveNextRoll={currentPlayer?.halveNextRoll}
-              />
-
-              {/* In-Game Real-Time Chat & Logs */}
+            {/* Right 1 Col: Live Game Log & Room Chat */}
+            <div className="lg:col-span-1">
               {currentPlayer && (
                 <GameChat
                   room={currentRoom}
@@ -410,6 +488,28 @@ export default function App() {
         <AdminModal
           onClose={() => setShowAdminModal(false)}
           onSettingsUpdated={(newSettings) => setAdminSettings(newSettings)}
+        />
+      )}
+
+      {/* 8. Pilgrim Profile Editor Modal */}
+      {showProfileModal && (
+        <PilgrimProfileEditor
+          initialProfile={loadPilgrimProfile()}
+          onSave={(updated) => {
+            showToast(`Nai-save ang profile ni ${updated.playerName}!`);
+          }}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
+
+      {/* 9. Interactive Tile Map Editor Modal */}
+      {showMapEditorModal && (
+        <TileMapEditor
+          onClose={() => setShowMapEditorModal(false)}
+          onMapSaved={(map) => {
+            showToast(`Nai-save ang mapa: ${map.name}`);
+          }}
+          onTestPlay={handleTestPlayMap}
         />
       )}
     </div>

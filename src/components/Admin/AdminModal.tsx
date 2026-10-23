@@ -21,6 +21,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [activeTab, setActiveTab] = useState<'cards' | 'builder' | 'assets' | 'backup'>('cards');
   const [selectedDeckFilter, setSelectedDeckFilter] = useState<CardDeckType | 'all'>('biyaya');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
   // Editable state
   const [cards, setCards] = useState<GameCard[]>(() => {
@@ -124,7 +125,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     setAvatars(DEFAULT_CHARACTER_AVATARS);
     setBackgrounds(DEFAULT_REALM_BACKGROUNDS);
     localStorage.removeItem('athanasia_custom_cards');
-    alert('Naibalik na ang canonical GDD cards at balance sa default!');
+    setStatusMessage('Naibalik na ang canonical GDD cards at balance sa default!');
+    setTimeout(() => setStatusMessage(''), 4000);
   };
 
   const handleExportJSON = () => {
@@ -680,6 +682,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <RotateCcw className="w-4 h-4" />
                     <span>I-reset ang Lahat ng Baraha sa Default</span>
                   </button>
+                  {statusMessage && (
+                    <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs">
+                      {statusMessage}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

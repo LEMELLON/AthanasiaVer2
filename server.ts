@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { GameRoom, PlayerState, GameCard, RealmType } from './src/types/game.ts';
+import { GameRoom, PlayerState, GameCard, RealmType, TileMapData } from './src/types/game.ts';
 import { 
   CANONICAL_SUMPA_CARDS, 
   CANONICAL_PAHIWATIG_CARDS, 
@@ -15,6 +15,7 @@ import {
   DEFAULT_CHARACTER_AVATARS,
   DEFAULT_ADMIN_SETTINGS 
 } from './src/data/canonicalCards.ts';
+import { CANONICAL_MAP_DATA } from './src/data/canonicalMap.ts';
 import { calculateClampedMovement, executeCardEffects, isGateTile } from './src/utils/modularCardEngine.ts';
 import { botChoosePagsubokAnswer, botChooseKapalaranIndex, botChooseGateTarget, botChooseBiyayaCard } from './src/utils/botAi.ts';
 
@@ -33,6 +34,10 @@ app.use(express.json());
 const rooms: Map<string, GameRoom> = new Map();
 // WebSocket connection registry: roomCode -> Set<WebSocket>
 const roomSockets: Map<string, Set<WebSocket>> = new Map();
+
+// In-Memory Tile Map Registry (Seeded with Canonical 50-Tile Map)
+const mapRegistry: Map<string, TileMapData> = new Map();
+mapRegistry.set(CANONICAL_MAP_DATA.id, CANONICAL_MAP_DATA);
 
 let currentAdminSettings = { ...DEFAULT_ADMIN_SETTINGS };
 
@@ -62,7 +67,8 @@ function createInitialRoom(
   name: string,
   hostName: string,
   hostAvatar: string,
-  maxPlayers: number = 4
+  maxPlayers: number = 4,
+  mapId?: string
 ): { room: GameRoom; hostId: string } {
   const hostId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const hostPlayer: PlayerState = {
@@ -82,6 +88,8 @@ function createInitialRoom(
     isEliminated: false,
   };
 
+  const selectedMap = (mapId && mapRegistry.get(mapId)) || CANONICAL_MAP_DATA;
+
   const room: GameRoom = {
     code,
     name: name || `Diwa Sanctuary ${code}`,
@@ -97,7 +105,7 @@ function createInitialRoom(
       {
         id: `sys_${Date.now()}`,
         sender: 'DIWA',
-        text: `Maligayang pagdating sa silid ${code}! Maghintay ng mga kasama o magdagdag ng bots bago simulan ang paglalakbay.`,
+        text: `Maligayang pagdating sa silid ${code}! Mapa: ${selectedMap.name}. Maghintay ng mga kasama o magdagdag ng bots bago simulan ang paglalakbay.`,
         timestamp: Date.now(),
         type: 'system',
       },
@@ -109,8 +117,11 @@ function createInitialRoom(
       himaraya: false,
       aetherya: false,
     },
-    historyLog: [`Nalikha ang silid ${code}.`],
+    historyLog: [`Nalikha ang silid ${code} gamit ang mapa: ${selectedMap.name}.`],
     cardsDataVersion: 1,
+    mapId: selectedMap.id,
+    mapData: selectedMap,
+    viewMode: 'tile_map',
   };
 
   rooms.set(code, room);
@@ -249,7 +260,8 @@ function handleBotTurn(room: GameRoom, bot: PlayerState) {
     const { finalTile, stoppedAtGate } = calculateClampedMovement(
       bot.currentTile,
       roll,
-      room.diwalingGatesUnlocked
+      room.diwalingGatesUnlocked,
+      room.mapData?.tiles
     );
     bot.currentTile = finalTile;
     room.chatMessages.push({
@@ -260,10 +272,12 @@ function handleBotTurn(room: GameRoom, bot: PlayerState) {
       type: 'system',
     });
 
-    const tile = CANONICAL_BOARD_TILES[finalTile] || CANONICAL_BOARD_TILES[0];
+    const currentMapTiles = room.mapData?.tiles || CANONICAL_BOARD_TILES;
+    const tile = currentMapTiles[finalTile] || currentMapTiles[0];
+    const maxTileIndex = currentMapTiles[currentMapTiles.length - 1]?.index ?? 50;
 
-    // Check Victory at Aetherya
-    if (finalTile >= 50) {
+    // Check Victory at Aetherya / Final Sanctuary
+    if (finalTile >= maxTileIndex) {
       room.status = 'ended';
       room.winner = bot.role === 'impostor' ? 'impostor' : 'aninag';
       room.chatMessages.push({
@@ -430,10 +444,64 @@ app.get('/api/rooms/:code', (req: Request, res: Response) => {
 });
 
 app.post('/api/rooms', (req: Request, res: Response) => {
-  const { name, hostName, hostAvatar, maxPlayers } = req.body || {};
+  const { name, hostName, hostAvatar, maxPlayers, mapId } = req.body || {};
   const code = generateRoomCode();
-  const { room, hostId } = createInitialRoom(code, name, hostName, hostAvatar, maxPlayers);
+  const { room, hostId } = createInitialRoom(code, name, hostName, hostAvatar, maxPlayers, mapId);
   res.json({ room, hostId });
+});
+
+// Map Registry REST Endpoints
+app.get('/api/maps', (_req: Request, res: Response) => {
+  const mapList = Array.from(mapRegistry.values()).map(m => ({
+    id: m.id,
+    name: m.name,
+    description: m.description,
+    author: m.author,
+    createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
+    totalTiles: m.tiles.length,
+    gatesCount: m.tiles.filter(t => t.type === 'pintuan').length,
+    pagsubokCount: m.tiles.filter(t => t.type === 'pagsubok').length,
+    kapalaranCount: m.tiles.filter(t => t.type === 'kapalaran').length,
+  }));
+  res.json(mapList);
+});
+
+app.get('/api/maps/:id', (req: Request, res: Response) => {
+  const id = req.params.id;
+  const mapData = mapRegistry.get(id);
+  if (!mapData) {
+    return res.status(404).json({ error: 'Hindi natagpuan ang mapa.' });
+  }
+  res.json(mapData);
+});
+
+app.post('/api/maps', (req: Request, res: Response) => {
+  const customMap: TileMapData = req.body;
+  if (!customMap || !customMap.name || !customMap.tiles || customMap.tiles.length === 0) {
+    return res.status(400).json({ error: 'Kulang o hindi wasto ang impormasyon ng mapa.' });
+  }
+  const id = customMap.id || `map_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const savedMap: TileMapData = {
+    ...customMap,
+    id,
+    updatedAt: Date.now(),
+    createdAt: customMap.createdAt || Date.now(),
+  };
+  mapRegistry.set(id, savedMap);
+  res.json({ success: true, map: savedMap });
+});
+
+app.delete('/api/maps/:id', (req: Request, res: Response) => {
+  const id = req.params.id;
+  if (id === CANONICAL_MAP_DATA.id) {
+    return res.status(403).json({ error: 'Hindi maaaring burahin ang Canonical Map.' });
+  }
+  if (!mapRegistry.has(id)) {
+    return res.status(404).json({ error: 'Hindi natagpuan ang mapa.' });
+  }
+  mapRegistry.delete(id);
+  res.json({ success: true });
 });
 
 app.post('/api/rooms/:code/join', (req: Request, res: Response) => {
@@ -535,10 +603,40 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
       break;
     }
 
-    case 'REMOVE_PLAYER': {
-      if (player && player.isHost && room.status === 'lobby' && payload?.targetPlayerId) {
-        room.players = room.players.filter(p => p.id !== payload.targetPlayerId);
-        broadcastRoom(room);
+    case 'REMOVE_PLAYER':
+    case 'KICK_PLAYER': {
+      if (player && player.isHost && room.status === 'lobby' && payload?.targetPlayerId && payload.targetPlayerId !== player.id) {
+        const kickedPlayer = room.players.find(p => p.id === payload.targetPlayerId);
+        if (kickedPlayer) {
+          room.players = room.players.filter(p => p.id !== payload.targetPlayerId);
+          room.chatMessages.push({
+            id: `kick_${Date.now()}`,
+            sender: 'DIWA',
+            text: `🚪 Pinalabas ng Host si ${kickedPlayer.name} mula sa silid ng paglalakbay.`,
+            timestamp: Date.now(),
+            type: 'system',
+          });
+          broadcastRoom(room);
+        }
+      }
+      break;
+    }
+
+    case 'SELECT_ROOM_MAP': {
+      if (player && player.isHost && room.status === 'lobby' && payload?.mapId) {
+        const selectedMap = mapRegistry.get(payload.mapId);
+        if (selectedMap) {
+          room.mapId = selectedMap.id;
+          room.mapData = selectedMap;
+          room.chatMessages.push({
+            id: `map_change_${Date.now()}`,
+            sender: 'DIWA',
+            text: `🗺️ Pinalitan ng Host ang mapa sa "${selectedMap.name}" (${selectedMap.tiles.length} tiles).`,
+            timestamp: Date.now(),
+            type: 'system',
+          });
+          broadcastRoom(room);
+        }
       }
       break;
     }
@@ -552,10 +650,14 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
         }
         room.activeDiceRoll = roll;
 
+        const currentMapTiles = room.mapData?.tiles || CANONICAL_BOARD_TILES;
+        const maxTileIndex = currentMapTiles[currentMapTiles.length - 1]?.index ?? 50;
+
         const { finalTile, stoppedAtGate } = calculateClampedMovement(
           player.currentTile,
           roll,
-          room.diwalingGatesUnlocked
+          room.diwalingGatesUnlocked,
+          currentMapTiles
         );
         player.currentTile = finalTile;
 
@@ -568,7 +670,7 @@ app.post('/api/rooms/:code/action', (req: Request, res: Response) => {
         });
 
         // Check Victory
-        if (finalTile >= 50) {
+        if (finalTile >= maxTileIndex) {
           room.status = 'ended';
           room.winner = player.role === 'impostor' ? 'impostor' : 'aninag';
           room.chatMessages.push({
@@ -864,7 +966,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, allowedHosts: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
